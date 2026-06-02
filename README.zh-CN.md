@@ -45,6 +45,9 @@ pbdb specimens --base-name Tyrannosaurus --limit 10
 pbdb references --ref-id 4205 --show attr
 pbdb associated --ref-id 4205 --record-type all
 pbdb auto --name Tyranno --limit 5
+pbdb fact-card --name Tyrannosaurus --limit 3
+pbdb reference-pack --ref-id 4205
+pbdb dispute-report --name Tyrannosaurus --limit 5
 pbdb request taxa/single.json --param name=Tyrannosaurus --param show=attr
 ```
 
@@ -89,6 +92,9 @@ startup_timeout_sec = 10.0
 - `strata_search`：查询地层单位。
 - `combined_auto`：跨 PBDB 记录类型做名称自动补全。
 - `associated_by_reference`：按 PBDB reference 查询关联的分类名、分类意见和 collection。
+- `taxon_fact_card`：为某个分类单元生成多查询证据卡，并保留来源查询 URL。
+- `reference_evidence_pack`：为某个 PBDB reference 生成证据包和关联记录。
+- `taxonomy_dispute_report`：生成分类意见报告，包含状态、作者、年份、参考文献和查询 URL。
 
 ## 研究注意事项
 
@@ -99,6 +105,8 @@ Occurrence 数量代表数据库中的化石记录数量，不等于古生物在
 `refs/list.json` 不能直接接受 `base_name`。如果要找某个分类单元背后的参考文献，应先查询 occurrences 或 collections，收集 `rid`，再用 `references --ref-id` 查询文献详情。
 
 按类群追文献时优先使用 `occs_refs`。按文献反查证据链时，使用 `associated_by_reference` 并设置 `record_type=all`。
+
+组合研究工具输出的是结构化 JSON 证据包，不直接生成面向公众的文案。解释、不确定性处理和小红书风格转译应放在单独的编辑层。
 
 ## 开发
 

@@ -45,6 +45,9 @@ pbdb specimens --base-name Tyrannosaurus --limit 10
 pbdb references --ref-id 4205 --show attr
 pbdb associated --ref-id 4205 --record-type all
 pbdb auto --name Tyranno --limit 5
+pbdb fact-card --name Tyrannosaurus --limit 3
+pbdb reference-pack --ref-id 4205
+pbdb dispute-report --name Tyrannosaurus --limit 5
 pbdb request taxa/single.json --param name=Tyrannosaurus --param show=attr
 ```
 
@@ -89,6 +92,9 @@ For direct script execution, ensure `src` is on `PYTHONPATH` or install the pack
 - `strata_search`: search stratigraphic units.
 - `combined_auto`: autocomplete names across PBDB record types.
 - `associated_by_reference`: return taxa, opinions, and/or collections associated with a PBDB reference.
+- `taxon_fact_card`: build a multi-query evidence card for a taxon, preserving source query URLs.
+- `reference_evidence_pack`: build an evidence pack for a PBDB reference and its associated records.
+- `taxonomy_dispute_report`: build a taxonomic opinion report with statuses, authors, years, references, and query URLs.
 
 ## Research Notes
 
@@ -99,6 +105,8 @@ Occurrence counts are records in the fossil database, not direct measures of his
 `refs/list.json` does not accept `base_name` directly. To find references behind a taxon-based claim, first query occurrences or collections, collect `rid`, then query `references --ref-id`.
 
 For taxon-based reference tracing, prefer `occs_refs` first. For reference-based evidence tracing, use `associated_by_reference` with `record_type=all`.
+
+The composite research tools return structured JSON evidence packs. They do not generate public-facing copy; keep interpretation, uncertainty, and Xiaohongshu-style rewriting in a separate editorial layer.
 
 ## Development
 

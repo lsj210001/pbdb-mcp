@@ -26,6 +26,7 @@ try:
         taxa_search,
         taxon_lookup,
     )
+    from .research import reference_evidence_pack, taxon_fact_card, taxonomy_dispute_report
 except ImportError:
     from client import (  # type: ignore[no-redef]
         associated_by_reference,
@@ -47,11 +48,12 @@ except ImportError:
         taxa_search,
         taxon_lookup,
     )
+    from research import reference_evidence_pack, taxon_fact_card, taxonomy_dispute_report  # type: ignore[no-redef]
 
 
 PROTOCOL_VERSION = "2024-11-05"
 SERVER_NAME = "pbdb-mcp"
-SERVER_VERSION = "0.2.0"
+SERVER_VERSION = "0.3.0"
 
 
 def _read_message() -> dict[str, Any] | None:
@@ -359,6 +361,46 @@ def _tool_schema() -> list[dict[str, Any]]:
                 "required": ["ref_id"],
             },
         },
+        {
+            "name": "taxon_fact_card",
+            "description": "Build a multi-query PBDB evidence card for a taxon, preserving source query URLs.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"},
+                    "limit": {"type": "integer", "minimum": 1, "maximum": 100},
+                    "geo_level": {"type": "integer", "minimum": 1, "default": 2},
+                    "timeout": {"type": "integer", "minimum": 1, "maximum": 120},
+                },
+                "required": ["name"],
+            },
+        },
+        {
+            "name": "reference_evidence_pack",
+            "description": "Build an evidence pack for a PBDB reference and its associated taxa, opinions, and collections.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "ref_id": {"type": ["string", "integer"]},
+                    "record_type": {"type": "string", "enum": ["txn", "opn", "col", "all"], "default": "all"},
+                    "timeout": {"type": "integer", "minimum": 1, "maximum": 120},
+                },
+                "required": ["ref_id"],
+            },
+        },
+        {
+            "name": "taxonomy_dispute_report",
+            "description": "Build a taxonomic opinion report for a taxon, including opinion statuses, authors, years, references, and query URLs.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"},
+                    "limit": {"type": "integer", "minimum": 1, "maximum": 100},
+                    "timeout": {"type": "integer", "minimum": 1, "maximum": 120},
+                },
+                "required": ["name"],
+            },
+        },
     ]
 
 
@@ -498,6 +540,24 @@ def _call_tool(name: str, args: dict[str, Any] | None) -> str:
         result = combined_auto(name=args["name"], record_type=args.get("record_type"), limit=args.get("limit", 10), timeout=timeout)
     elif name == "associated_by_reference":
         result = associated_by_reference(ref_id=args["ref_id"], record_type=args.get("record_type", "all"), show=args.get("show"), timeout=timeout)
+    elif name == "taxon_fact_card":
+        return json.dumps(
+            taxon_fact_card(name=args["name"], limit=args.get("limit", 10), geo_level=args.get("geo_level", 2), timeout=timeout),
+            ensure_ascii=False,
+            indent=2,
+        )
+    elif name == "reference_evidence_pack":
+        return json.dumps(
+            reference_evidence_pack(ref_id=args["ref_id"], record_type=args.get("record_type", "all"), timeout=timeout),
+            ensure_ascii=False,
+            indent=2,
+        )
+    elif name == "taxonomy_dispute_report":
+        return json.dumps(
+            taxonomy_dispute_report(name=args["name"], limit=args.get("limit", 25), timeout=timeout),
+            ensure_ascii=False,
+            indent=2,
+        )
     else:
         raise KeyError(name)
 

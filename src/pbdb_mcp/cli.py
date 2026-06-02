@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 
 try:
@@ -24,6 +25,7 @@ try:
         taxa_search,
         taxon_lookup,
     )
+    from .research import reference_evidence_pack, taxon_fact_card, taxonomy_dispute_report
 except ImportError:
     from client import (  # type: ignore[no-redef]
         collections_search,
@@ -45,6 +47,7 @@ except ImportError:
         taxa_search,
         taxon_lookup,
     )
+    from research import reference_evidence_pack, taxon_fact_card, taxonomy_dispute_report  # type: ignore[no-redef]
 
 
 def parse_param_pairs(values: list[str]) -> dict[str, str]:
@@ -208,6 +211,22 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--show")
     add_common_timeout(p)
 
+    p = sub.add_parser("fact-card", help="Build a multi-query taxon fact card")
+    p.add_argument("--name", required=True)
+    p.add_argument("--limit", type=int, default=10)
+    p.add_argument("--geo-level", type=int, default=2)
+    add_common_timeout(p)
+
+    p = sub.add_parser("reference-pack", help="Build an evidence pack for a PBDB reference")
+    p.add_argument("--ref-id", required=True)
+    p.add_argument("--record-type", choices=["txn", "opn", "col", "all"], default="all")
+    add_common_timeout(p)
+
+    p = sub.add_parser("dispute-report", help="Build a taxonomic opinion/dispute report")
+    p.add_argument("--name", required=True)
+    p.add_argument("--limit", type=int, default=25)
+    add_common_timeout(p)
+
     return parser
 
 
@@ -346,6 +365,21 @@ def main(argv: list[str] | None = None) -> int:
         result = combined_auto(name=args.name, record_type=args.record_type, limit=args.limit, timeout=args.timeout)
     elif args.command == "associated":
         result = associated_by_reference(ref_id=args.ref_id, record_type=args.record_type, show=args.show, timeout=args.timeout)
+    elif args.command == "fact-card":
+        result = taxon_fact_card(name=args.name, limit=args.limit, geo_level=args.geo_level, timeout=args.timeout)
+        sys.stdout.write(json.dumps(result, ensure_ascii=False, indent=2))
+        sys.stdout.write("\n")
+        return 0
+    elif args.command == "reference-pack":
+        result = reference_evidence_pack(ref_id=args.ref_id, record_type=args.record_type, timeout=args.timeout)
+        sys.stdout.write(json.dumps(result, ensure_ascii=False, indent=2))
+        sys.stdout.write("\n")
+        return 0
+    elif args.command == "dispute-report":
+        result = taxonomy_dispute_report(name=args.name, limit=args.limit, timeout=args.timeout)
+        sys.stdout.write(json.dumps(result, ensure_ascii=False, indent=2))
+        sys.stdout.write("\n")
+        return 0
     else:
         raise AssertionError(args.command)
 

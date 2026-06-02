@@ -27,6 +27,9 @@ class MCPServerTest(unittest.TestCase):
                 "strata_search",
                 "combined_auto",
                 "associated_by_reference",
+                "taxon_fact_card",
+                "reference_evidence_pack",
+                "taxonomy_dispute_report",
             },
         )
 
