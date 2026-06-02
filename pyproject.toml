@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pbdb-mcp"
+version = "0.1.0"
+description = "Model Context Protocol server and CLI for the Paleobiology Database Data Service."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "lsj210001" }]
+keywords = ["mcp", "paleobiology", "paleontology", "pbdb", "fossils"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Topic :: Scientific/Engineering",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/lsj210001/pbdb-mcp"
+Repository = "https://github.com/lsj210001/pbdb-mcp"
+PBDB = "https://paleobiodb.org/data"
+
+[project.scripts]
+pbdb = "pbdb_mcp.cli:main"
+pbdb-mcp = "pbdb_mcp.server:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
