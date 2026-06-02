@@ -1,5 +1,7 @@
 # pbdb-mcp
 
+[中文说明](README.zh-CN.md)
+
 `pbdb-mcp` is a lightweight Model Context Protocol server and CLI for the Paleobiology Database Data Service v1.2.
 
 It exposes PBDB fossil data as agent-callable tools for paleontology research, fossil occurrence checks, taxon lookup, geological intervals, stratigraphic units, and reference tracing.
