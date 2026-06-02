@@ -7,31 +7,51 @@ from typing import Any, Dict
 
 try:
     from .client import (
+        associated_by_reference,
         collections_search,
+        combined_auto,
+        geo_summary,
         intervals_search,
+        occs_refs,
+        occs_strata_summary,
+        occs_taxa_summary,
+        opinions_search,
         occurrences_search,
         pretty_result,
         references_search,
         request,
         strata_search,
+        specimens_search,
+        taxa_opinions,
+        taxa_search,
         taxon_lookup,
     )
 except ImportError:
     from client import (  # type: ignore[no-redef]
+        associated_by_reference,
         collections_search,
+        combined_auto,
+        geo_summary,
         intervals_search,
+        occs_refs,
+        occs_strata_summary,
+        occs_taxa_summary,
+        opinions_search,
         occurrences_search,
         pretty_result,
         references_search,
         request,
         strata_search,
+        specimens_search,
+        taxa_opinions,
+        taxa_search,
         taxon_lookup,
     )
 
 
 PROTOCOL_VERSION = "2024-11-05"
 SERVER_NAME = "pbdb-mcp"
-SERVER_VERSION = "0.1.0"
+SERVER_VERSION = "0.2.0"
 
 
 def _read_message() -> dict[str, Any] | None:
@@ -101,6 +121,54 @@ def _tool_schema() -> list[dict[str, Any]]:
             },
         },
         {
+            "name": "taxa_search",
+            "description": "Search taxonomic names by base name, taxon name, identifier, or rank.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "base_name": {"type": "string"},
+                    "taxon_name": {"type": "string"},
+                    "taxon_id": {"type": ["string", "integer"]},
+                    "rank": {"type": "string"},
+                    "limit": {"type": "integer", "minimum": 1, "maximum": 500},
+                    "show": {"type": "string", "default": "attr"},
+                    "timeout": {"type": "integer", "minimum": 1, "maximum": 120},
+                },
+            },
+        },
+        {
+            "name": "taxa_opinions",
+            "description": "Return taxonomic opinions attached to a selected taxon.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "base_name": {"type": "string"},
+                    "taxon_name": {"type": "string"},
+                    "taxon_id": {"type": ["string", "integer"]},
+                    "limit": {"type": "integer", "minimum": 1, "maximum": 500},
+                    "show": {"type": "string"},
+                    "timeout": {"type": "integer", "minimum": 1, "maximum": 120},
+                },
+            },
+        },
+        {
+            "name": "opinions_search",
+            "description": "Search taxonomic opinions by identifier, author, publication year, or recent changes.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "opinion_id": {"type": ["string", "integer"]},
+                    "author": {"type": "string"},
+                    "pubyr": {"type": ["string", "integer"]},
+                    "created_since": {"type": "string"},
+                    "modified_since": {"type": "string"},
+                    "limit": {"type": "integer", "minimum": 1, "maximum": 500},
+                    "show": {"type": "string"},
+                    "timeout": {"type": "integer", "minimum": 1, "maximum": 120},
+                },
+            },
+        },
+        {
             "name": "occurrences_search",
             "description": "Search fossil occurrences by taxon, interval, or geography.",
             "inputSchema": {
@@ -118,8 +186,93 @@ def _tool_schema() -> list[dict[str, Any]]:
             },
         },
         {
+            "name": "occs_taxa_summary",
+            "description": "Summarize the taxonomic hierarchy represented by a selected set of occurrences.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "base_name": {"type": "string"},
+                    "taxon_name": {"type": "string"},
+                    "interval": {"type": "string"},
+                    "country": {"type": "string"},
+                    "state": {"type": "string"},
+                    "rank": {"type": "string"},
+                    "limit": {"type": "integer", "minimum": 1, "maximum": 500},
+                    "show": {"type": "string", "default": "attr"},
+                    "timeout": {"type": "integer", "minimum": 1, "maximum": 120},
+                },
+            },
+        },
+        {
+            "name": "occs_refs",
+            "description": "Return references associated with a selected set of fossil occurrences.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "base_name": {"type": "string"},
+                    "taxon_name": {"type": "string"},
+                    "interval": {"type": "string"},
+                    "country": {"type": "string"},
+                    "state": {"type": "string"},
+                    "limit": {"type": "integer", "minimum": 1, "maximum": 500},
+                    "show": {"type": "string", "default": "attr"},
+                    "timeout": {"type": "integer", "minimum": 1, "maximum": 120},
+                },
+            },
+        },
+        {
+            "name": "occs_strata_summary",
+            "description": "Summarize strata associated with a selected set of fossil occurrences.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "base_name": {"type": "string"},
+                    "taxon_name": {"type": "string"},
+                    "interval": {"type": "string"},
+                    "country": {"type": "string"},
+                    "state": {"type": "string"},
+                    "limit": {"type": "integer", "minimum": 1, "maximum": 500},
+                    "timeout": {"type": "integer", "minimum": 1, "maximum": 120},
+                },
+            },
+        },
+        {
+            "name": "geo_summary",
+            "description": "Return geographic cluster summaries for selected occurrences or collections.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "record_type": {"type": "string", "enum": ["occs", "colls"], "default": "occs"},
+                    "level": {"type": "integer", "minimum": 1, "default": 2},
+                    "base_name": {"type": "string"},
+                    "taxon_name": {"type": "string"},
+                    "interval": {"type": "string"},
+                    "country": {"type": "string"},
+                    "state": {"type": "string"},
+                    "timeout": {"type": "integer", "minimum": 1, "maximum": 120},
+                },
+            },
+        },
+        {
             "name": "collections_search",
             "description": "Search fossil collections by taxon, interval, or geography.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "base_name": {"type": "string"},
+                    "taxon_name": {"type": "string"},
+                    "interval": {"type": "string"},
+                    "country": {"type": "string"},
+                    "state": {"type": "string"},
+                    "limit": {"type": "integer", "minimum": 1, "maximum": 500},
+                    "show": {"type": "string"},
+                    "timeout": {"type": "integer", "minimum": 1, "maximum": 120},
+                },
+            },
+        },
+        {
+            "name": "specimens_search",
+            "description": "Search PBDB fossil specimens by taxon, interval, or geography.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -178,6 +331,34 @@ def _tool_schema() -> list[dict[str, Any]]:
                 },
             },
         },
+        {
+            "name": "combined_auto",
+            "description": "Autocomplete names across PBDB record types.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"},
+                    "record_type": {"type": "string"},
+                    "limit": {"type": "integer", "minimum": 1, "maximum": 500},
+                    "timeout": {"type": "integer", "minimum": 1, "maximum": 120},
+                },
+                "required": ["name"],
+            },
+        },
+        {
+            "name": "associated_by_reference",
+            "description": "Return taxa, opinions, and/or collections associated with a PBDB reference.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "ref_id": {"type": ["string", "integer"]},
+                    "record_type": {"type": "string", "enum": ["txn", "opn", "col", "all"], "default": "all"},
+                    "show": {"type": "string"},
+                    "timeout": {"type": "integer", "minimum": 1, "maximum": 120},
+                },
+                "required": ["ref_id"],
+            },
+        },
     ]
 
 
@@ -189,6 +370,36 @@ def _call_tool(name: str, args: dict[str, Any] | None) -> str:
         result = request(args["path"], params=args.get("params"), timeout=timeout)
     elif name == "taxon_lookup":
         result = taxon_lookup(name=args.get("name"), taxon_no=args.get("taxon_no"), show=args.get("show"), timeout=timeout)
+    elif name == "taxa_search":
+        result = taxa_search(
+            base_name=args.get("base_name"),
+            taxon_name=args.get("taxon_name"),
+            taxon_id=args.get("taxon_id"),
+            rank=args.get("rank"),
+            limit=args.get("limit", 50),
+            show=args.get("show", "attr"),
+            timeout=timeout,
+        )
+    elif name == "taxa_opinions":
+        result = taxa_opinions(
+            base_name=args.get("base_name"),
+            taxon_name=args.get("taxon_name"),
+            taxon_id=args.get("taxon_id"),
+            limit=args.get("limit", 50),
+            show=args.get("show"),
+            timeout=timeout,
+        )
+    elif name == "opinions_search":
+        result = opinions_search(
+            opinion_id=args.get("opinion_id"),
+            author=args.get("author"),
+            pubyr=args.get("pubyr"),
+            created_since=args.get("created_since"),
+            modified_since=args.get("modified_since"),
+            limit=args.get("limit", 50),
+            show=args.get("show"),
+            timeout=timeout,
+        )
     elif name == "occurrences_search":
         result = occurrences_search(
             base_name=args.get("base_name"),
@@ -200,6 +411,50 @@ def _call_tool(name: str, args: dict[str, Any] | None) -> str:
             show=args.get("show", "coords,attr"),
             timeout=timeout,
         )
+    elif name == "occs_taxa_summary":
+        result = occs_taxa_summary(
+            base_name=args.get("base_name"),
+            taxon_name=args.get("taxon_name"),
+            interval=args.get("interval"),
+            country=args.get("country"),
+            state=args.get("state"),
+            rank=args.get("rank"),
+            limit=args.get("limit", 50),
+            show=args.get("show", "attr"),
+            timeout=timeout,
+        )
+    elif name == "occs_refs":
+        result = occs_refs(
+            base_name=args.get("base_name"),
+            taxon_name=args.get("taxon_name"),
+            interval=args.get("interval"),
+            country=args.get("country"),
+            state=args.get("state"),
+            limit=args.get("limit", 50),
+            show=args.get("show", "attr"),
+            timeout=timeout,
+        )
+    elif name == "occs_strata_summary":
+        result = occs_strata_summary(
+            base_name=args.get("base_name"),
+            taxon_name=args.get("taxon_name"),
+            interval=args.get("interval"),
+            country=args.get("country"),
+            state=args.get("state"),
+            limit=args.get("limit", 50),
+            timeout=timeout,
+        )
+    elif name == "geo_summary":
+        result = geo_summary(
+            record_type=args.get("record_type", "occs"),
+            level=args.get("level", 2),
+            base_name=args.get("base_name"),
+            taxon_name=args.get("taxon_name"),
+            interval=args.get("interval"),
+            country=args.get("country"),
+            state=args.get("state"),
+            timeout=timeout,
+        )
     elif name == "collections_search":
         result = collections_search(
             base_name=args.get("base_name"),
@@ -209,6 +464,17 @@ def _call_tool(name: str, args: dict[str, Any] | None) -> str:
             state=args.get("state"),
             limit=args.get("limit", 50),
             show=args.get("show", "loc,time,strat,ref"),
+            timeout=timeout,
+        )
+    elif name == "specimens_search":
+        result = specimens_search(
+            base_name=args.get("base_name"),
+            taxon_name=args.get("taxon_name"),
+            interval=args.get("interval"),
+            country=args.get("country"),
+            state=args.get("state"),
+            limit=args.get("limit", 50),
+            show=args.get("show"),
             timeout=timeout,
         )
     elif name == "references_search":
@@ -228,6 +494,10 @@ def _call_tool(name: str, args: dict[str, Any] | None) -> str:
         result = intervals_search(name=args.get("name"), limit=args.get("limit", 50), timeout=timeout)
     elif name == "strata_search":
         result = strata_search(name=args.get("name"), interval=args.get("interval"), limit=args.get("limit", 50), timeout=timeout)
+    elif name == "combined_auto":
+        result = combined_auto(name=args["name"], record_type=args.get("record_type"), limit=args.get("limit", 10), timeout=timeout)
+    elif name == "associated_by_reference":
+        result = associated_by_reference(ref_id=args["ref_id"], record_type=args.get("record_type", "all"), show=args.get("show"), timeout=timeout)
     else:
         raise KeyError(name)
 

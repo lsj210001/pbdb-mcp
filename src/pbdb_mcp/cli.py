@@ -6,23 +6,43 @@ import sys
 try:
     from .client import (
         collections_search,
+        associated_by_reference,
+        combined_auto,
+        geo_summary,
         intervals_search,
+        occs_refs,
+        occs_strata_summary,
+        occs_taxa_summary,
+        opinions_search,
         occurrences_search,
         pretty_result,
         references_search,
         request,
         strata_search,
+        specimens_search,
+        taxa_opinions,
+        taxa_search,
         taxon_lookup,
     )
 except ImportError:
     from client import (  # type: ignore[no-redef]
         collections_search,
+        associated_by_reference,
+        combined_auto,
+        geo_summary,
         intervals_search,
+        occs_refs,
+        occs_strata_summary,
+        occs_taxa_summary,
+        opinions_search,
         occurrences_search,
         pretty_result,
         references_search,
         request,
         strata_search,
+        specimens_search,
+        taxa_opinions,
+        taxa_search,
         taxon_lookup,
     )
 
@@ -56,6 +76,33 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--show")
     add_common_timeout(p)
 
+    p = sub.add_parser("taxa", help="Search taxonomic names")
+    p.add_argument("--base-name")
+    p.add_argument("--taxon-name")
+    p.add_argument("--taxon-id")
+    p.add_argument("--rank")
+    p.add_argument("--limit", type=int, default=50)
+    p.add_argument("--show", default="attr")
+    add_common_timeout(p)
+
+    p = sub.add_parser("taxa-opinions", help="Search opinions attached to a taxon")
+    p.add_argument("--base-name")
+    p.add_argument("--taxon-name")
+    p.add_argument("--taxon-id")
+    p.add_argument("--limit", type=int, default=50)
+    p.add_argument("--show")
+    add_common_timeout(p)
+
+    p = sub.add_parser("opinions", help="Search taxonomic opinions")
+    p.add_argument("--opinion-id")
+    p.add_argument("--author")
+    p.add_argument("--pubyr")
+    p.add_argument("--created-since")
+    p.add_argument("--modified-since")
+    p.add_argument("--limit", type=int, default=50)
+    p.add_argument("--show")
+    add_common_timeout(p)
+
     p = sub.add_parser("occurrences", help="Search occurrences")
     p.add_argument("--base-name")
     p.add_argument("--taxon-name")
@@ -66,6 +113,46 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--show", default="coords,attr")
     add_common_timeout(p)
 
+    p = sub.add_parser("occs-taxa", help="Summarize taxa from selected occurrences")
+    p.add_argument("--base-name")
+    p.add_argument("--taxon-name")
+    p.add_argument("--interval")
+    p.add_argument("--country")
+    p.add_argument("--state")
+    p.add_argument("--rank")
+    p.add_argument("--limit", type=int, default=50)
+    p.add_argument("--show", default="attr")
+    add_common_timeout(p)
+
+    p = sub.add_parser("occs-refs", help="Search references associated with selected occurrences")
+    p.add_argument("--base-name")
+    p.add_argument("--taxon-name")
+    p.add_argument("--interval")
+    p.add_argument("--country")
+    p.add_argument("--state")
+    p.add_argument("--limit", type=int, default=50)
+    p.add_argument("--show", default="attr")
+    add_common_timeout(p)
+
+    p = sub.add_parser("occs-strata", help="Summarize strata from selected occurrences")
+    p.add_argument("--base-name")
+    p.add_argument("--taxon-name")
+    p.add_argument("--interval")
+    p.add_argument("--country")
+    p.add_argument("--state")
+    p.add_argument("--limit", type=int, default=50)
+    add_common_timeout(p)
+
+    p = sub.add_parser("geo-summary", help="Geographic summary for occurrences or collections")
+    p.add_argument("--record-type", choices=["occs", "colls"], default="occs")
+    p.add_argument("--level", type=int, default=2)
+    p.add_argument("--base-name")
+    p.add_argument("--taxon-name")
+    p.add_argument("--interval")
+    p.add_argument("--country")
+    p.add_argument("--state")
+    add_common_timeout(p)
+
     p = sub.add_parser("collections", help="Search collections")
     p.add_argument("--base-name")
     p.add_argument("--taxon-name")
@@ -74,6 +161,16 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--state")
     p.add_argument("--limit", type=int, default=50)
     p.add_argument("--show", default="loc,time,strat,ref")
+    add_common_timeout(p)
+
+    p = sub.add_parser("specimens", help="Search fossil specimens")
+    p.add_argument("--base-name")
+    p.add_argument("--taxon-name")
+    p.add_argument("--interval")
+    p.add_argument("--country")
+    p.add_argument("--state")
+    p.add_argument("--limit", type=int, default=50)
+    p.add_argument("--show")
     add_common_timeout(p)
 
     p = sub.add_parser("references", help="Search references")
@@ -99,6 +196,18 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--limit", type=int, default=50)
     add_common_timeout(p)
 
+    p = sub.add_parser("auto", help="Autocomplete names across PBDB record types")
+    p.add_argument("--name", required=True)
+    p.add_argument("--record-type")
+    p.add_argument("--limit", type=int, default=10)
+    add_common_timeout(p)
+
+    p = sub.add_parser("associated", help="List records associated with a reference")
+    p.add_argument("--ref-id", required=True)
+    p.add_argument("--record-type", choices=["txn", "opn", "col", "all"], default="all")
+    p.add_argument("--show")
+    add_common_timeout(p)
+
     return parser
 
 
@@ -109,6 +218,36 @@ def main(argv: list[str] | None = None) -> int:
         result = request(args.path, parse_param_pairs(args.param), timeout=args.timeout)
     elif args.command == "taxon":
         result = taxon_lookup(name=args.name, taxon_no=args.taxon_no, show=args.show, timeout=args.timeout)
+    elif args.command == "taxa":
+        result = taxa_search(
+            base_name=args.base_name,
+            taxon_name=args.taxon_name,
+            taxon_id=args.taxon_id,
+            rank=args.rank,
+            limit=args.limit,
+            show=args.show,
+            timeout=args.timeout,
+        )
+    elif args.command == "taxa-opinions":
+        result = taxa_opinions(
+            base_name=args.base_name,
+            taxon_name=args.taxon_name,
+            taxon_id=args.taxon_id,
+            limit=args.limit,
+            show=args.show,
+            timeout=args.timeout,
+        )
+    elif args.command == "opinions":
+        result = opinions_search(
+            opinion_id=args.opinion_id,
+            author=args.author,
+            pubyr=args.pubyr,
+            created_since=args.created_since,
+            modified_since=args.modified_since,
+            limit=args.limit,
+            show=args.show,
+            timeout=args.timeout,
+        )
     elif args.command == "occurrences":
         result = occurrences_search(
             base_name=args.base_name,
@@ -120,8 +259,63 @@ def main(argv: list[str] | None = None) -> int:
             show=args.show,
             timeout=args.timeout,
         )
+    elif args.command == "occs-taxa":
+        result = occs_taxa_summary(
+            base_name=args.base_name,
+            taxon_name=args.taxon_name,
+            interval=args.interval,
+            country=args.country,
+            state=args.state,
+            rank=args.rank,
+            limit=args.limit,
+            show=args.show,
+            timeout=args.timeout,
+        )
+    elif args.command == "occs-refs":
+        result = occs_refs(
+            base_name=args.base_name,
+            taxon_name=args.taxon_name,
+            interval=args.interval,
+            country=args.country,
+            state=args.state,
+            limit=args.limit,
+            show=args.show,
+            timeout=args.timeout,
+        )
+    elif args.command == "occs-strata":
+        result = occs_strata_summary(
+            base_name=args.base_name,
+            taxon_name=args.taxon_name,
+            interval=args.interval,
+            country=args.country,
+            state=args.state,
+            limit=args.limit,
+            timeout=args.timeout,
+        )
+    elif args.command == "geo-summary":
+        result = geo_summary(
+            record_type=args.record_type,
+            level=args.level,
+            base_name=args.base_name,
+            taxon_name=args.taxon_name,
+            interval=args.interval,
+            country=args.country,
+            state=args.state,
+            timeout=args.timeout,
+        )
     elif args.command == "collections":
         result = collections_search(
+            base_name=args.base_name,
+            taxon_name=args.taxon_name,
+            interval=args.interval,
+            country=args.country,
+            state=args.state,
+            limit=args.limit,
+            show=args.show,
+            timeout=args.timeout,
+        )
+    elif args.command == "specimens":
+        result = specimens_search(
             base_name=args.base_name,
             taxon_name=args.taxon_name,
             interval=args.interval,
@@ -148,6 +342,10 @@ def main(argv: list[str] | None = None) -> int:
         result = intervals_search(name=args.name, limit=args.limit, timeout=args.timeout)
     elif args.command == "strata":
         result = strata_search(name=args.name, interval=args.interval, limit=args.limit, timeout=args.timeout)
+    elif args.command == "auto":
+        result = combined_auto(name=args.name, record_type=args.record_type, limit=args.limit, timeout=args.timeout)
+    elif args.command == "associated":
+        result = associated_by_reference(ref_id=args.ref_id, record_type=args.record_type, show=args.show, timeout=args.timeout)
     else:
         raise AssertionError(args.command)
 

@@ -12,11 +12,21 @@ class MCPServerTest(unittest.TestCase):
             {
                 "pbdb_request",
                 "taxon_lookup",
+                "taxa_search",
+                "taxa_opinions",
+                "opinions_search",
                 "occurrences_search",
+                "occs_taxa_summary",
+                "occs_refs",
+                "occs_strata_summary",
+                "geo_summary",
                 "collections_search",
+                "specimens_search",
                 "references_search",
                 "intervals_search",
                 "strata_search",
+                "combined_auto",
+                "associated_by_reference",
             },
         )
 

@@ -33,9 +33,18 @@ pbdb-mcp
 
 ```bash
 pbdb taxon --name Tyrannosaurus --show attr
+pbdb taxa --base-name Tyrannosaurus --limit 3
+pbdb taxa-opinions --base-name Tyrannosaurus --limit 3
 pbdb occurrences --base-name Tyrannosaurus --limit 10 --show coords,attr
+pbdb occs-taxa --base-name Tyrannosaurus --limit 10 --show attr
+pbdb occs-refs --base-name Tyrannosaurus --limit 10 --show attr
+pbdb occs-strata --base-name Tyrannosaurus --limit 10
+pbdb geo-summary --record-type occs --base-name Tyrannosaurus --level 2
 pbdb collections --base-name Tyrannosaurus --limit 10
+pbdb specimens --base-name Tyrannosaurus --limit 10
 pbdb references --ref-id 4205 --show attr
+pbdb associated --ref-id 4205 --record-type all
+pbdb auto --name Tyranno --limit 5
 pbdb request taxa/single.json --param name=Tyrannosaurus --param show=attr
 ```
 
@@ -65,11 +74,21 @@ startup_timeout_sec = 10.0
 
 - `pbdb_request`：调用 `https://paleobiodb.org/data1.2/` 下任意 PBDB API 路径。
 - `taxon_lookup`：按 `name` 或 `taxon_no` 查询分类单元。
+- `taxa_search`：按 base name、taxon name、编号或 rank 查询分类名。
+- `taxa_opinions`：查询某个分类单元关联的分类意见。
+- `opinions_search`：按编号、作者、发表年份或最近变更查询分类意见。
 - `occurrences_search`：按分类单元、地质年代、国家或州/省查询化石 occurrence。
+- `occs_taxa_summary`：对选定 occurrence 集合做分类层级汇总。
+- `occs_refs`：查询选定 occurrence 集合关联的参考文献。
+- `occs_strata_summary`：汇总选定 occurrence 集合关联的地层信息。
+- `geo_summary`：查询 occurrence 或 collection 的地理聚类汇总。
 - `collections_search`：按分类单元、地质年代、国家或州/省查询 fossil collection。
+- `specimens_search`：按分类单元、地质年代或地理条件查询化石标本。
 - `references_search`：按 `ref_id`、作者、标题、DOI、出版物标题或匹配文本查询参考文献。
 - `intervals_search`：查询地质年代区间。
 - `strata_search`：查询地层单位。
+- `combined_auto`：跨 PBDB 记录类型做名称自动补全。
+- `associated_by_reference`：按 PBDB reference 查询关联的分类名、分类意见和 collection。
 
 ## 研究注意事项
 
@@ -78,6 +97,8 @@ PBDB 是一个持续更新的科学数据库。为了保证研究可复现，应
 Occurrence 数量代表数据库中的化石记录数量，不等于古生物在真实历史中的丰度。基于 PBDB 数据做重要判断时，应通过 `rid` / `ref_id` 追溯到来源参考文献。
 
 `refs/list.json` 不能直接接受 `base_name`。如果要找某个分类单元背后的参考文献，应先查询 occurrences 或 collections，收集 `rid`，再用 `references --ref-id` 查询文献详情。
+
+按类群追文献时优先使用 `occs_refs`。按文献反查证据链时，使用 `associated_by_reference` 并设置 `record_type=all`。
 
 ## 开发
 

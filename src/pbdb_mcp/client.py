@@ -10,7 +10,7 @@ from urllib.request import Request, urlopen
 
 PBDB_BASE_URL = "https://paleobiodb.org/data1.2/"
 DEFAULT_TIMEOUT = 30
-USER_AGENT = "xhs-research-pbdb/1.0"
+USER_AGENT = "pbdb-mcp/0.2.0"
 
 
 @dataclass
@@ -83,6 +83,88 @@ def taxon_lookup(name: str | None = None, taxon_no: str | int | None = None, sho
     return request("taxa/single.json", params=params, timeout=timeout)
 
 
+def taxa_search(
+    *,
+    base_name: str | None = None,
+    taxon_name: str | None = None,
+    taxon_id: str | int | None = None,
+    rank: str | None = None,
+    limit: int | None = 50,
+    show: str | None = "attr",
+    timeout: int = DEFAULT_TIMEOUT,
+) -> PBDBResponse:
+    params: dict[str, Any] = {}
+    if base_name is not None:
+        params["base_name"] = base_name
+    if taxon_name is not None:
+        params["taxon_name"] = taxon_name
+    if taxon_id is not None:
+        params["id"] = taxon_id
+    if rank is not None:
+        params["rank"] = rank
+    if limit is not None:
+        params["limit"] = limit
+    if show is not None:
+        params["show"] = show
+    return request("taxa/list.json", params=params, timeout=timeout)
+
+
+def taxa_opinions(
+    *,
+    base_name: str | None = None,
+    taxon_name: str | None = None,
+    taxon_id: str | int | None = None,
+    limit: int | None = 50,
+    show: str | None = None,
+    timeout: int = DEFAULT_TIMEOUT,
+) -> PBDBResponse:
+    params: dict[str, Any] = {}
+    if base_name is not None:
+        params["base_name"] = base_name
+    if taxon_name is not None:
+        params["taxon_name"] = taxon_name
+    if taxon_id is not None:
+        params["id"] = taxon_id
+    if limit is not None:
+        params["limit"] = limit
+    if show is not None:
+        params["show"] = show
+    return request("taxa/opinions.json", params=params, timeout=timeout)
+
+
+def opinions_search(
+    *,
+    opinion_id: str | int | None = None,
+    author: str | None = None,
+    pubyr: str | int | None = None,
+    created_since: str | None = None,
+    modified_since: str | None = None,
+    limit: int | None = 50,
+    show: str | None = None,
+    timeout: int = DEFAULT_TIMEOUT,
+) -> PBDBResponse:
+    params: dict[str, Any] = {}
+    if opinion_id is not None:
+        params["id"] = opinion_id
+        if show is not None:
+            params["show"] = show
+        return request("opinions/single.json", params=params, timeout=timeout)
+
+    if author is not None:
+        params["author"] = author
+    if pubyr is not None:
+        params["pubyr"] = pubyr
+    if created_since is not None:
+        params["created_since"] = created_since
+    if modified_since is not None:
+        params["modified_since"] = modified_since
+    if limit is not None:
+        params["limit"] = limit
+    if show is not None:
+        params["show"] = show
+    return request("opinions/list.json", params=params, timeout=timeout)
+
+
 def occurrences_search(
     *,
     base_name: str | None = None,
@@ -112,6 +194,122 @@ def occurrences_search(
     return request("occs/list.json", params=params, timeout=timeout)
 
 
+def occs_taxa_summary(
+    *,
+    base_name: str | None = None,
+    taxon_name: str | None = None,
+    interval: str | None = None,
+    country: str | None = None,
+    state: str | None = None,
+    rank: str | None = None,
+    limit: int | None = 50,
+    show: str | None = "attr",
+    timeout: int = DEFAULT_TIMEOUT,
+) -> PBDBResponse:
+    params: dict[str, Any] = {}
+    if base_name is not None:
+        params["base_name"] = base_name
+    if taxon_name is not None:
+        params["taxon_name"] = taxon_name
+    if interval is not None:
+        params["interval"] = interval
+    if country is not None:
+        params["country"] = country
+    if state is not None:
+        params["state"] = state
+    if rank is not None:
+        params["rank"] = rank
+    if limit is not None:
+        params["limit"] = limit
+    if show is not None:
+        params["show"] = show
+    return request("occs/taxa.json", params=params, timeout=timeout)
+
+
+def occs_refs(
+    *,
+    base_name: str | None = None,
+    taxon_name: str | None = None,
+    interval: str | None = None,
+    country: str | None = None,
+    state: str | None = None,
+    limit: int | None = 50,
+    show: str | None = "attr",
+    timeout: int = DEFAULT_TIMEOUT,
+) -> PBDBResponse:
+    params: dict[str, Any] = {}
+    if base_name is not None:
+        params["base_name"] = base_name
+    if taxon_name is not None:
+        params["taxon_name"] = taxon_name
+    if interval is not None:
+        params["interval"] = interval
+    if country is not None:
+        params["country"] = country
+    if state is not None:
+        params["state"] = state
+    if limit is not None:
+        params["limit"] = limit
+    if show is not None:
+        params["show"] = show
+    return request("occs/refs.json", params=params, timeout=timeout)
+
+
+def occs_strata_summary(
+    *,
+    base_name: str | None = None,
+    taxon_name: str | None = None,
+    interval: str | None = None,
+    country: str | None = None,
+    state: str | None = None,
+    limit: int | None = 50,
+    timeout: int = DEFAULT_TIMEOUT,
+) -> PBDBResponse:
+    params: dict[str, Any] = {}
+    if base_name is not None:
+        params["base_name"] = base_name
+    if taxon_name is not None:
+        params["taxon_name"] = taxon_name
+    if interval is not None:
+        params["interval"] = interval
+    if country is not None:
+        params["country"] = country
+    if state is not None:
+        params["state"] = state
+    if limit is not None:
+        params["limit"] = limit
+    return request("occs/strata.json", params=params, timeout=timeout)
+
+
+def geo_summary(
+    *,
+    record_type: str = "occs",
+    level: int = 2,
+    base_name: str | None = None,
+    taxon_name: str | None = None,
+    interval: str | None = None,
+    country: str | None = None,
+    state: str | None = None,
+    timeout: int = DEFAULT_TIMEOUT,
+) -> PBDBResponse:
+    if record_type not in {"occs", "colls"}:
+        raise ValueError("record_type must be 'occs' or 'colls'")
+
+    params: dict[str, Any] = {"level": level}
+    if base_name is not None:
+        params["base_name"] = base_name
+    if taxon_name is not None:
+        params["taxon_name"] = taxon_name
+    if interval is not None:
+        params["interval"] = interval
+    if country is not None:
+        params["country"] = country
+    if state is not None:
+        params["state"] = state
+    path = "occs/geosum.json" if record_type == "occs" else "colls/summary.json"
+    return request(path, params=params, timeout=timeout)
+
+
 def collections_search(
     *,
     base_name: str | None = None,
@@ -139,6 +337,35 @@ def collections_search(
     if show is not None:
         params["show"] = show
     return request("colls/list.json", params=params, timeout=timeout)
+
+
+def specimens_search(
+    *,
+    base_name: str | None = None,
+    taxon_name: str | None = None,
+    interval: str | None = None,
+    country: str | None = None,
+    state: str | None = None,
+    limit: int | None = 50,
+    show: str | None = None,
+    timeout: int = DEFAULT_TIMEOUT,
+) -> PBDBResponse:
+    params: dict[str, Any] = {}
+    if base_name is not None:
+        params["base_name"] = base_name
+    if taxon_name is not None:
+        params["taxon_name"] = taxon_name
+    if interval is not None:
+        params["interval"] = interval
+    if country is not None:
+        params["country"] = country
+    if state is not None:
+        params["state"] = state
+    if limit is not None:
+        params["limit"] = limit
+    if show is not None:
+        params["show"] = show
+    return request("specs/list.json", params=params, timeout=timeout)
 
 
 def references_search(
@@ -194,3 +421,31 @@ def strata_search(*, name: str | None = None, interval: str | None = None, limit
     if limit is not None:
         params["limit"] = limit
     return request("strata/list.json", params=params, timeout=timeout)
+
+
+def combined_auto(
+    *,
+    name: str,
+    record_type: str | None = None,
+    limit: int | None = 10,
+    timeout: int = DEFAULT_TIMEOUT,
+) -> PBDBResponse:
+    params: dict[str, Any] = {"name": name}
+    if record_type is not None:
+        params["type"] = record_type
+    if limit is not None:
+        params["limit"] = limit
+    return request("combined/auto.json", params=params, timeout=timeout)
+
+
+def associated_by_reference(
+    *,
+    ref_id: str | int,
+    record_type: str = "all",
+    show: str | None = None,
+    timeout: int = DEFAULT_TIMEOUT,
+) -> PBDBResponse:
+    params: dict[str, Any] = {"ref_id": ref_id, "type": record_type}
+    if show is not None:
+        params["show"] = show
+    return request("combined/associated.json", params=params, timeout=timeout)

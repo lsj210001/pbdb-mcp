@@ -2,7 +2,18 @@ import json
 import unittest
 from unittest.mock import patch
 
-from pbdb_mcp.client import PBDBResponse, build_url, pretty_result, references_search
+from pbdb_mcp.client import (
+    PBDBResponse,
+    associated_by_reference,
+    build_url,
+    combined_auto,
+    occs_refs,
+    pretty_result,
+    references_search,
+    specimens_search,
+    taxa_opinions,
+    taxa_search,
+)
 
 
 class FakeResponse:
@@ -50,6 +61,70 @@ class ClientTest(unittest.TestCase):
         self.assertIn("ref_id=4205", seen_urls[0])
         self.assertIn("limit=1", seen_urls[0])
         self.assertEqual(result.body["records"][0]["oid"], "ref:4205")
+
+    def test_taxa_search_uses_taxa_list_path(self):
+        seen_urls = []
+
+        def fake_urlopen(request, timeout):
+            seen_urls.append(request.full_url)
+            return FakeResponse({"records": [{"oid": "txn:38613"}]})
+
+        with patch("pbdb_mcp.client.urlopen", fake_urlopen):
+            taxa_search(base_name="Tyrannosaurus", limit=3)
+
+        self.assertIn("/taxa/list.json?", seen_urls[0])
+        self.assertIn("base_name=Tyrannosaurus", seen_urls[0])
+
+    def test_taxa_opinions_uses_taxa_opinions_path(self):
+        seen_urls = []
+
+        def fake_urlopen(request, timeout):
+            seen_urls.append(request.full_url)
+            return FakeResponse({"records": [{"oid": "opn:1"}]})
+
+        with patch("pbdb_mcp.client.urlopen", fake_urlopen):
+            taxa_opinions(base_name="Tyrannosaurus", limit=3)
+
+        self.assertIn("/taxa/opinions.json?", seen_urls[0])
+
+    def test_occurrence_references_use_occs_refs_path(self):
+        seen_urls = []
+
+        def fake_urlopen(request, timeout):
+            seen_urls.append(request.full_url)
+            return FakeResponse({"records": [{"oid": "ref:1"}]})
+
+        with patch("pbdb_mcp.client.urlopen", fake_urlopen):
+            occs_refs(base_name="Tyrannosaurus", limit=3)
+
+        self.assertIn("/occs/refs.json?", seen_urls[0])
+
+    def test_specimens_search_uses_specs_list_path(self):
+        seen_urls = []
+
+        def fake_urlopen(request, timeout):
+            seen_urls.append(request.full_url)
+            return FakeResponse({"records": [{"oid": "spm:1"}]})
+
+        with patch("pbdb_mcp.client.urlopen", fake_urlopen):
+            specimens_search(base_name="Tyrannosaurus", limit=3)
+
+        self.assertIn("/specs/list.json?", seen_urls[0])
+
+    def test_combined_helpers_use_expected_paths(self):
+        seen_urls = []
+
+        def fake_urlopen(request, timeout):
+            seen_urls.append(request.full_url)
+            return FakeResponse({"records": []})
+
+        with patch("pbdb_mcp.client.urlopen", fake_urlopen):
+            combined_auto(name="Tyranno", limit=3)
+            associated_by_reference(ref_id=4205, record_type="all")
+
+        self.assertIn("/combined/auto.json?", seen_urls[0])
+        self.assertIn("/combined/associated.json?", seen_urls[1])
+        self.assertIn("ref_id=4205", seen_urls[1])
 
     def test_pretty_result_formats_json(self):
         text = pretty_result(
