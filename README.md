@@ -48,6 +48,10 @@ pbdb auto --name Tyranno --limit 5
 pbdb fact-card --name Tyrannosaurus --limit 3
 pbdb reference-pack --ref-id 4205
 pbdb dispute-report --name Tyrannosaurus --limit 5
+pbdb compare-pack --name Tyrannosaurus --name Triceratops --limit 2
+pbdb interval-pack --interval "Late Cretaceous" --limit 5
+pbdb locality-pack --country US --state Montana --interval "Late Cretaceous" --limit 5
+pbdb quality-report --name Tyrannosaurus --limit 10
 pbdb request taxa/single.json --param name=Tyrannosaurus --param show=attr
 ```
 
@@ -89,12 +93,27 @@ For direct script execution, ensure `src` is on `PYTHONPATH` or install the pack
 - `specimens_search`: search PBDB fossil specimens by taxon, interval, or geography.
 - `references_search`: search references by `ref_id`, author, title, DOI, publication title, or match text.
 - `intervals_search`: search geological intervals.
-- `strata_search`: search stratigraphic units.
+- `strata_search`: search stratigraphic units by name. For interval-scoped strata, use `occs_strata_summary`.
 - `combined_auto`: autocomplete names across PBDB record types.
 - `associated_by_reference`: return taxa, opinions, and/or collections associated with a PBDB reference.
 - `taxon_fact_card`: build a multi-query evidence card for a taxon, preserving source query URLs.
 - `reference_evidence_pack`: build an evidence pack for a PBDB reference and its associated records.
 - `taxonomy_dispute_report`: build a taxonomic opinion report with statuses, authors, years, references, and query URLs.
+- `taxa_compare_pack`: compare 2-5 taxa with sampled PBDB age ranges, geography, references, opinions, and evidence-quality flags.
+- `interval_context_pack`: build a geological interval context pack with sampled taxa, occurrences, collections, strata, references, geography, and quality flags.
+- `locality_context_pack`: build a locality, region, taxon-filtered, or stratum-context pack from PBDB records.
+- `evidence_quality_report`: assess sampled PBDB evidence quality for a taxon, interval, and/or geography query scope.
+
+## Composite Workflow Tools
+
+The composite tools are general research workflows, not platform-specific writing tools:
+
+- Comparative workflows: use `taxa_compare_pack` to compare taxon records under the same sampling limit.
+- Geological context workflows: use `interval_context_pack` to understand the PBDB record context around a named interval.
+- Locality and stratum workflows: use `locality_context_pack` to inspect regional, state/province, interval, taxon, or stratum-scoped records.
+- Evidence review workflows: use `evidence_quality_report` to surface low sample sizes, sparse references, broad age ranges, missing coordinate coverage, and taxonomy-review cautions.
+
+Every composite result preserves source query URLs so downstream research notes, publications, or content workflows can cite and reproduce the PBDB calls.
 
 ## Research Notes
 
@@ -106,7 +125,9 @@ Occurrence counts are records in the fossil database, not direct measures of his
 
 For taxon-based reference tracing, prefer `occs_refs` first. For reference-based evidence tracing, use `associated_by_reference` with `record_type=all`.
 
-The composite research tools return structured JSON evidence packs. They do not generate public-facing copy; keep interpretation, uncertainty, and Xiaohongshu-style rewriting in a separate editorial layer.
+The composite research tools return structured JSON evidence packs. They do not generate public-facing copy; keep interpretation, uncertainty, and audience-specific rewriting in a separate editorial layer.
+
+The open-source package stays focused on PBDB data access, evidence tracing, comparative context, and evidence-quality assessment. Project-specific editorial workflows should live outside this repository.
 
 ## Development
 

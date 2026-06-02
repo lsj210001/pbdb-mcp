@@ -11,6 +11,7 @@ from pbdb_mcp.client import (
     pretty_result,
     references_search,
     specimens_search,
+    strata_search,
     taxa_opinions,
     taxa_search,
 )
@@ -110,6 +111,10 @@ class ClientTest(unittest.TestCase):
             specimens_search(base_name="Tyrannosaurus", limit=3)
 
         self.assertIn("/specs/list.json?", seen_urls[0])
+
+    def test_strata_search_rejects_interval_parameter(self):
+        with self.assertRaises(ValueError):
+            strata_search(interval="Late Cretaceous")
 
     def test_combined_helpers_use_expected_paths(self):
         seen_urls = []

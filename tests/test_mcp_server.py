@@ -30,6 +30,10 @@ class MCPServerTest(unittest.TestCase):
                 "taxon_fact_card",
                 "reference_evidence_pack",
                 "taxonomy_dispute_report",
+                "taxa_compare_pack",
+                "interval_context_pack",
+                "locality_context_pack",
+                "evidence_quality_report",
             },
         )
 

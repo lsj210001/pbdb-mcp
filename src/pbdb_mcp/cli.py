@@ -25,7 +25,15 @@ try:
         taxa_search,
         taxon_lookup,
     )
-    from .research import reference_evidence_pack, taxon_fact_card, taxonomy_dispute_report
+    from .research import (
+        evidence_quality_report,
+        interval_context_pack,
+        locality_context_pack,
+        reference_evidence_pack,
+        taxa_compare_pack,
+        taxon_fact_card,
+        taxonomy_dispute_report,
+    )
 except ImportError:
     from client import (  # type: ignore[no-redef]
         collections_search,
@@ -47,7 +55,15 @@ except ImportError:
         taxa_search,
         taxon_lookup,
     )
-    from research import reference_evidence_pack, taxon_fact_card, taxonomy_dispute_report  # type: ignore[no-redef]
+    from research import (  # type: ignore[no-redef]
+        evidence_quality_report,
+        interval_context_pack,
+        locality_context_pack,
+        reference_evidence_pack,
+        taxa_compare_pack,
+        taxon_fact_card,
+        taxonomy_dispute_report,
+    )
 
 
 def parse_param_pairs(values: list[str]) -> dict[str, str]:
@@ -195,7 +211,6 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("strata", help="Search strata")
     p.add_argument("--name")
-    p.add_argument("--interval")
     p.add_argument("--limit", type=int, default=50)
     add_common_timeout(p)
 
@@ -224,6 +239,36 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("dispute-report", help="Build a taxonomic opinion/dispute report")
     p.add_argument("--name", required=True)
+    p.add_argument("--limit", type=int, default=25)
+    add_common_timeout(p)
+
+    p = sub.add_parser("compare-pack", help="Build a comparative evidence pack for 2-5 taxa")
+    p.add_argument("--name", action="append", required=True, help="Taxon name. Repeat 2-5 times.")
+    p.add_argument("--limit", type=int, default=10)
+    p.add_argument("--geo-level", type=int, default=2)
+    add_common_timeout(p)
+
+    p = sub.add_parser("interval-pack", help="Build a geological interval context pack")
+    p.add_argument("--interval", required=True)
+    p.add_argument("--limit", type=int, default=25)
+    p.add_argument("--geo-level", type=int, default=2)
+    add_common_timeout(p)
+
+    p = sub.add_parser("locality-pack", help="Build a locality, region, or stratum context pack")
+    p.add_argument("--country")
+    p.add_argument("--state")
+    p.add_argument("--interval")
+    p.add_argument("--base-name")
+    p.add_argument("--stratum-name")
+    p.add_argument("--limit", type=int, default=25)
+    p.add_argument("--geo-level", type=int, default=2)
+    add_common_timeout(p)
+
+    p = sub.add_parser("quality-report", help="Build an evidence quality report for a PBDB query scope")
+    p.add_argument("--name")
+    p.add_argument("--interval")
+    p.add_argument("--country")
+    p.add_argument("--state")
     p.add_argument("--limit", type=int, default=25)
     add_common_timeout(p)
 
@@ -360,7 +405,7 @@ def main(argv: list[str] | None = None) -> int:
     elif args.command == "intervals":
         result = intervals_search(name=args.name, limit=args.limit, timeout=args.timeout)
     elif args.command == "strata":
-        result = strata_search(name=args.name, interval=args.interval, limit=args.limit, timeout=args.timeout)
+        result = strata_search(name=args.name, limit=args.limit, timeout=args.timeout)
     elif args.command == "auto":
         result = combined_auto(name=args.name, record_type=args.record_type, limit=args.limit, timeout=args.timeout)
     elif args.command == "associated":
@@ -377,6 +422,42 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     elif args.command == "dispute-report":
         result = taxonomy_dispute_report(name=args.name, limit=args.limit, timeout=args.timeout)
+        sys.stdout.write(json.dumps(result, ensure_ascii=False, indent=2))
+        sys.stdout.write("\n")
+        return 0
+    elif args.command == "compare-pack":
+        result = taxa_compare_pack(names=args.name, limit=args.limit, geo_level=args.geo_level, timeout=args.timeout)
+        sys.stdout.write(json.dumps(result, ensure_ascii=False, indent=2))
+        sys.stdout.write("\n")
+        return 0
+    elif args.command == "interval-pack":
+        result = interval_context_pack(interval=args.interval, limit=args.limit, geo_level=args.geo_level, timeout=args.timeout)
+        sys.stdout.write(json.dumps(result, ensure_ascii=False, indent=2))
+        sys.stdout.write("\n")
+        return 0
+    elif args.command == "locality-pack":
+        result = locality_context_pack(
+            country=args.country,
+            state=args.state,
+            interval=args.interval,
+            base_name=args.base_name,
+            stratum_name=args.stratum_name,
+            limit=args.limit,
+            geo_level=args.geo_level,
+            timeout=args.timeout,
+        )
+        sys.stdout.write(json.dumps(result, ensure_ascii=False, indent=2))
+        sys.stdout.write("\n")
+        return 0
+    elif args.command == "quality-report":
+        result = evidence_quality_report(
+            name=args.name,
+            interval=args.interval,
+            country=args.country,
+            state=args.state,
+            limit=args.limit,
+            timeout=args.timeout,
+        )
         sys.stdout.write(json.dumps(result, ensure_ascii=False, indent=2))
         sys.stdout.write("\n")
         return 0

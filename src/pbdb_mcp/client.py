@@ -10,7 +10,7 @@ from urllib.request import Request, urlopen
 
 PBDB_BASE_URL = "https://paleobiodb.org/data1.2/"
 DEFAULT_TIMEOUT = 30
-USER_AGENT = "pbdb-mcp/0.3.0"
+USER_AGENT = "pbdb-mcp/0.4.0"
 
 
 @dataclass
@@ -413,11 +413,12 @@ def intervals_search(*, name: str | None = None, limit: int | None = 50, timeout
 
 
 def strata_search(*, name: str | None = None, interval: str | None = None, limit: int | None = 50, timeout: int = DEFAULT_TIMEOUT) -> PBDBResponse:
+    if interval is not None:
+        raise ValueError("strata_search does not support interval. Use occs_strata_summary for interval-scoped strata.")
+
     params: dict[str, Any] = {}
     if name is not None:
         params["name"] = name
-    if interval is not None:
-        params["interval"] = interval
     if limit is not None:
         params["limit"] = limit
     return request("strata/list.json", params=params, timeout=timeout)

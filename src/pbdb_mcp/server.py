@@ -26,7 +26,15 @@ try:
         taxa_search,
         taxon_lookup,
     )
-    from .research import reference_evidence_pack, taxon_fact_card, taxonomy_dispute_report
+    from .research import (
+        evidence_quality_report,
+        interval_context_pack,
+        locality_context_pack,
+        reference_evidence_pack,
+        taxa_compare_pack,
+        taxon_fact_card,
+        taxonomy_dispute_report,
+    )
 except ImportError:
     from client import (  # type: ignore[no-redef]
         associated_by_reference,
@@ -48,12 +56,20 @@ except ImportError:
         taxa_search,
         taxon_lookup,
     )
-    from research import reference_evidence_pack, taxon_fact_card, taxonomy_dispute_report  # type: ignore[no-redef]
+    from research import (  # type: ignore[no-redef]
+        evidence_quality_report,
+        interval_context_pack,
+        locality_context_pack,
+        reference_evidence_pack,
+        taxa_compare_pack,
+        taxon_fact_card,
+        taxonomy_dispute_report,
+    )
 
 
 PROTOCOL_VERSION = "2024-11-05"
 SERVER_NAME = "pbdb-mcp"
-SERVER_VERSION = "0.3.0"
+SERVER_VERSION = "0.4.0"
 
 
 def _read_message() -> dict[str, Any] | None:
@@ -322,12 +338,11 @@ def _tool_schema() -> list[dict[str, Any]]:
         },
         {
             "name": "strata_search",
-            "description": "Search stratigraphic units.",
+            "description": "Search stratigraphic units by name. For interval-scoped strata, use occs_strata_summary.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
                     "name": {"type": "string"},
-                    "interval": {"type": "string"},
                     "limit": {"type": "integer", "minimum": 1, "maximum": 500},
                     "timeout": {"type": "integer", "minimum": 1, "maximum": 120},
                 },
@@ -399,6 +414,66 @@ def _tool_schema() -> list[dict[str, Any]]:
                     "timeout": {"type": "integer", "minimum": 1, "maximum": 120},
                 },
                 "required": ["name"],
+            },
+        },
+        {
+            "name": "taxa_compare_pack",
+            "description": "Build a comparative PBDB evidence pack for 2-5 taxa, including sampled age ranges, geography, references, and quality flags.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "names": {"type": "array", "items": {"type": "string"}, "minItems": 2, "maxItems": 5},
+                    "limit": {"type": "integer", "minimum": 1, "maximum": 100},
+                    "geo_level": {"type": "integer", "minimum": 1, "default": 2},
+                    "timeout": {"type": "integer", "minimum": 1, "maximum": 120},
+                },
+                "required": ["names"],
+            },
+        },
+        {
+            "name": "interval_context_pack",
+            "description": "Build a PBDB context pack for a geological interval, including taxa, occurrences, collections, strata, references, geography, and quality flags.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "interval": {"type": "string"},
+                    "limit": {"type": "integer", "minimum": 1, "maximum": 200},
+                    "geo_level": {"type": "integer", "minimum": 1, "default": 2},
+                    "timeout": {"type": "integer", "minimum": 1, "maximum": 120},
+                },
+                "required": ["interval"],
+            },
+        },
+        {
+            "name": "locality_context_pack",
+            "description": "Build a PBDB context pack for a region, locality scope, taxon filter, interval, or stratum lookup.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "country": {"type": "string"},
+                    "state": {"type": "string"},
+                    "interval": {"type": "string"},
+                    "base_name": {"type": "string"},
+                    "stratum_name": {"type": "string"},
+                    "limit": {"type": "integer", "minimum": 1, "maximum": 200},
+                    "geo_level": {"type": "integer", "minimum": 1, "default": 2},
+                    "timeout": {"type": "integer", "minimum": 1, "maximum": 120},
+                },
+            },
+        },
+        {
+            "name": "evidence_quality_report",
+            "description": "Assess sampled PBDB evidence quality for a taxon, interval, and/or geography query scope.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"},
+                    "interval": {"type": "string"},
+                    "country": {"type": "string"},
+                    "state": {"type": "string"},
+                    "limit": {"type": "integer", "minimum": 1, "maximum": 200},
+                    "timeout": {"type": "integer", "minimum": 1, "maximum": 120},
+                },
             },
         },
     ]
@@ -535,7 +610,7 @@ def _call_tool(name: str, args: dict[str, Any] | None) -> str:
     elif name == "intervals_search":
         result = intervals_search(name=args.get("name"), limit=args.get("limit", 50), timeout=timeout)
     elif name == "strata_search":
-        result = strata_search(name=args.get("name"), interval=args.get("interval"), limit=args.get("limit", 50), timeout=timeout)
+        result = strata_search(name=args.get("name"), limit=args.get("limit", 50), timeout=timeout)
     elif name == "combined_auto":
         result = combined_auto(name=args["name"], record_type=args.get("record_type"), limit=args.get("limit", 10), timeout=timeout)
     elif name == "associated_by_reference":
@@ -555,6 +630,46 @@ def _call_tool(name: str, args: dict[str, Any] | None) -> str:
     elif name == "taxonomy_dispute_report":
         return json.dumps(
             taxonomy_dispute_report(name=args["name"], limit=args.get("limit", 25), timeout=timeout),
+            ensure_ascii=False,
+            indent=2,
+        )
+    elif name == "taxa_compare_pack":
+        return json.dumps(
+            taxa_compare_pack(names=args["names"], limit=args.get("limit", 10), geo_level=args.get("geo_level", 2), timeout=timeout),
+            ensure_ascii=False,
+            indent=2,
+        )
+    elif name == "interval_context_pack":
+        return json.dumps(
+            interval_context_pack(interval=args["interval"], limit=args.get("limit", 25), geo_level=args.get("geo_level", 2), timeout=timeout),
+            ensure_ascii=False,
+            indent=2,
+        )
+    elif name == "locality_context_pack":
+        return json.dumps(
+            locality_context_pack(
+                country=args.get("country"),
+                state=args.get("state"),
+                interval=args.get("interval"),
+                base_name=args.get("base_name"),
+                stratum_name=args.get("stratum_name"),
+                limit=args.get("limit", 25),
+                geo_level=args.get("geo_level", 2),
+                timeout=timeout,
+            ),
+            ensure_ascii=False,
+            indent=2,
+        )
+    elif name == "evidence_quality_report":
+        return json.dumps(
+            evidence_quality_report(
+                name=args.get("name"),
+                interval=args.get("interval"),
+                country=args.get("country"),
+                state=args.get("state"),
+                limit=args.get("limit", 25),
+                timeout=timeout,
+            ),
             ensure_ascii=False,
             indent=2,
         )

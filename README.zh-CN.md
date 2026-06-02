@@ -48,6 +48,10 @@ pbdb auto --name Tyranno --limit 5
 pbdb fact-card --name Tyrannosaurus --limit 3
 pbdb reference-pack --ref-id 4205
 pbdb dispute-report --name Tyrannosaurus --limit 5
+pbdb compare-pack --name Tyrannosaurus --name Triceratops --limit 2
+pbdb interval-pack --interval "Late Cretaceous" --limit 5
+pbdb locality-pack --country US --state Montana --interval "Late Cretaceous" --limit 5
+pbdb quality-report --name Tyrannosaurus --limit 10
 pbdb request taxa/single.json --param name=Tyrannosaurus --param show=attr
 ```
 
@@ -89,12 +93,27 @@ startup_timeout_sec = 10.0
 - `specimens_search`：按分类单元、地质年代或地理条件查询化石标本。
 - `references_search`：按 `ref_id`、作者、标题、DOI、出版物标题或匹配文本查询参考文献。
 - `intervals_search`：查询地质年代区间。
-- `strata_search`：查询地层单位。
+- `strata_search`：按名称查询地层单位。按地质年代汇总地层时使用 `occs_strata_summary`。
 - `combined_auto`：跨 PBDB 记录类型做名称自动补全。
 - `associated_by_reference`：按 PBDB reference 查询关联的分类名、分类意见和 collection。
 - `taxon_fact_card`：为某个分类单元生成多查询证据卡，并保留来源查询 URL。
 - `reference_evidence_pack`：为某个 PBDB reference 生成证据包和关联记录。
 - `taxonomy_dispute_report`：生成分类意见报告，包含状态、作者、年份、参考文献和查询 URL。
+- `taxa_compare_pack`：比较 2-5 个分类单元的 PBDB 样本证据，包括年代范围、地理、参考文献、分类意见和证据质量提示。
+- `interval_context_pack`：生成地质年代背景包，包括样本类群、occurrence、collection、地层、参考文献、地理和证据质量提示。
+- `locality_context_pack`：围绕地区、州/省、分类单元过滤条件或地层查询生成 PBDB 背景包。
+- `evidence_quality_report`：评估某个分类单元、地质年代和/或地理查询范围下的 PBDB 样本证据质量。
+
+## 组合工作流工具
+
+组合工具是通用研究工作流，不是面向特定内容平台的写作工具：
+
+- 比较研究：用 `taxa_compare_pack` 在相同采样上限下比较多个分类单元。
+- 地质背景：用 `interval_context_pack` 查看某个地质年代在 PBDB 中的记录背景。
+- 地区与地层背景：用 `locality_context_pack` 检查地区、州/省、地质年代、分类单元或地层相关记录。
+- 证据审查：用 `evidence_quality_report` 提示样本量偏低、参考文献稀疏、年代范围过宽、坐标覆盖不足和分类意见需要复核等问题。
+
+每个组合结果都会保留来源查询 URL，方便下游研究笔记、论文、报告或内容工作流复现 PBDB 查询。
 
 ## 研究注意事项
 
@@ -106,7 +125,9 @@ Occurrence 数量代表数据库中的化石记录数量，不等于古生物在
 
 按类群追文献时优先使用 `occs_refs`。按文献反查证据链时，使用 `associated_by_reference` 并设置 `record_type=all`。
 
-组合研究工具输出的是结构化 JSON 证据包，不直接生成面向公众的文案。解释、不确定性处理和小红书风格转译应放在单独的编辑层。
+组合研究工具输出的是结构化 JSON 证据包，不直接生成面向公众的文案。解释、不确定性处理和面向特定受众的转译应放在单独的编辑层。
+
+开源包本身聚焦 PBDB 数据访问、证据追溯、比较背景和证据质量评估。项目专用的编辑、选题或平台化工作流应放在本仓库之外。
 
 ## 开发
 
