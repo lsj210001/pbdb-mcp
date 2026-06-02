@@ -10,7 +10,7 @@ from urllib.request import Request, urlopen
 
 PBDB_BASE_URL = "https://paleobiodb.org/data1.2/"
 DEFAULT_TIMEOUT = 30
-USER_AGENT = "pbdb-mcp/0.4.0"
+USER_AGENT = "pbdb-mcp/0.5.0"
 
 
 @dataclass

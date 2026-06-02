@@ -25,6 +25,7 @@ try:
         taxa_search,
         taxon_lookup,
     )
+    from .outputs import bibliography_pack, pack_validation_report, research_summary_markdown
     from .research import (
         evidence_quality_report,
         interval_context_pack,
@@ -55,6 +56,7 @@ except ImportError:
         taxa_search,
         taxon_lookup,
     )
+    from outputs import bibliography_pack, pack_validation_report, research_summary_markdown  # type: ignore[no-redef]
     from research import (  # type: ignore[no-redef]
         evidence_quality_report,
         interval_context_pack,
@@ -78,6 +80,17 @@ def parse_param_pairs(values: list[str]) -> dict[str, str]:
 
 def add_common_timeout(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--timeout", type=int, default=30)
+
+
+def load_json_input(path: str) -> dict:
+    if path == "-":
+        payload = json.load(sys.stdin)
+    else:
+        with open(path, "r", encoding="utf-8") as file:
+            payload = json.load(file)
+    if not isinstance(payload, dict):
+        raise SystemExit("Input JSON must be an object.")
+    return payload
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -272,6 +285,19 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--limit", type=int, default=25)
     add_common_timeout(p)
 
+    p = sub.add_parser("bibliography", help="Extract a bibliography from an evidence pack JSON file")
+    p.add_argument("--input", default="-", help="Evidence pack JSON file, or - for stdin")
+    p.add_argument("--limit", type=int, default=100)
+
+    p = sub.add_parser("validate-pack", help="Validate reproducibility metadata in an evidence pack JSON file")
+    p.add_argument("--input", default="-", help="Evidence pack JSON file, or - for stdin")
+
+    p = sub.add_parser("markdown-summary", help="Render a generic Markdown research summary from an evidence pack JSON file")
+    p.add_argument("--input", default="-", help="Evidence pack JSON file, or - for stdin")
+    p.add_argument("--title")
+    p.add_argument("--max-references", type=int, default=10)
+    p.add_argument("--max-queries", type=int, default=20)
+
     return parser
 
 
@@ -460,6 +486,26 @@ def main(argv: list[str] | None = None) -> int:
         )
         sys.stdout.write(json.dumps(result, ensure_ascii=False, indent=2))
         sys.stdout.write("\n")
+        return 0
+    elif args.command == "bibliography":
+        result = bibliography_pack(load_json_input(args.input), limit=args.limit)
+        sys.stdout.write(json.dumps(result, ensure_ascii=False, indent=2))
+        sys.stdout.write("\n")
+        return 0
+    elif args.command == "validate-pack":
+        result = pack_validation_report(load_json_input(args.input))
+        sys.stdout.write(json.dumps(result, ensure_ascii=False, indent=2))
+        sys.stdout.write("\n")
+        return 0
+    elif args.command == "markdown-summary":
+        sys.stdout.write(
+            research_summary_markdown(
+                load_json_input(args.input),
+                title=args.title,
+                max_references=args.max_references,
+                max_queries=args.max_queries,
+            )
+        )
         return 0
     else:
         raise AssertionError(args.command)

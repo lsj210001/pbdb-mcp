@@ -52,6 +52,10 @@ pbdb compare-pack --name Tyrannosaurus --name Triceratops --limit 2
 pbdb interval-pack --interval "Late Cretaceous" --limit 5
 pbdb locality-pack --country US --state Montana --interval "Late Cretaceous" --limit 5
 pbdb quality-report --name Tyrannosaurus --limit 10
+pbdb fact-card --name Tyrannosaurus --limit 3 > tyrannosaurus-pack.json
+pbdb bibliography --input tyrannosaurus-pack.json
+pbdb validate-pack --input tyrannosaurus-pack.json
+pbdb markdown-summary --input tyrannosaurus-pack.json --title "Tyrannosaurus PBDB Summary"
 pbdb request taxa/single.json --param name=Tyrannosaurus --param show=attr
 ```
 
@@ -103,6 +107,9 @@ For direct script execution, ensure `src` is on `PYTHONPATH` or install the pack
 - `interval_context_pack`: build a geological interval context pack with sampled taxa, occurrences, collections, strata, references, geography, and quality flags.
 - `locality_context_pack`: build a locality, region, taxon-filtered, or stratum-context pack from PBDB records.
 - `evidence_quality_report`: assess sampled PBDB evidence quality for a taxon, interval, and/or geography query scope.
+- `bibliography_pack`: extract structured reference metadata from an existing PBDB evidence pack.
+- `pack_validation_report`: validate reproducibility metadata and source coverage in an existing PBDB evidence pack.
+- `research_summary_markdown`: render a generic Markdown research summary from an existing PBDB evidence pack.
 
 ## Composite Workflow Tools
 
@@ -114,6 +121,23 @@ The composite tools are general research workflows, not platform-specific writin
 - Evidence review workflows: use `evidence_quality_report` to surface low sample sizes, sparse references, broad age ranges, missing coordinate coverage, and taxonomy-review cautions.
 
 Every composite result preserves source query URLs so downstream research notes, publications, or content workflows can cite and reproduce the PBDB calls.
+
+## Reproducible Research Outputs
+
+Composite evidence packs include a top-level `manifest` with:
+
+- package name and version
+- PBDB base URL
+- workflow name
+- original input
+- generated timestamp
+- every recorded query URL, endpoint, parsed parameters, and record count
+
+Use local output tools to process an existing evidence pack without making additional PBDB requests:
+
+- `bibliography_pack` / `pbdb bibliography`: extract reference metadata.
+- `pack_validation_report` / `pbdb validate-pack`: check manifest, query URLs, evidence records, references, and age-range coverage.
+- `research_summary_markdown` / `pbdb markdown-summary`: render a generic Markdown summary with scope, validation, references, reproducible queries, and caveats.
 
 ## Research Notes
 

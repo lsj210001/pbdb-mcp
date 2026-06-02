@@ -52,6 +52,10 @@ pbdb compare-pack --name Tyrannosaurus --name Triceratops --limit 2
 pbdb interval-pack --interval "Late Cretaceous" --limit 5
 pbdb locality-pack --country US --state Montana --interval "Late Cretaceous" --limit 5
 pbdb quality-report --name Tyrannosaurus --limit 10
+pbdb fact-card --name Tyrannosaurus --limit 3 > tyrannosaurus-pack.json
+pbdb bibliography --input tyrannosaurus-pack.json
+pbdb validate-pack --input tyrannosaurus-pack.json
+pbdb markdown-summary --input tyrannosaurus-pack.json --title "Tyrannosaurus PBDB Summary"
 pbdb request taxa/single.json --param name=Tyrannosaurus --param show=attr
 ```
 
@@ -103,6 +107,9 @@ startup_timeout_sec = 10.0
 - `interval_context_pack`：生成地质年代背景包，包括样本类群、occurrence、collection、地层、参考文献、地理和证据质量提示。
 - `locality_context_pack`：围绕地区、州/省、分类单元过滤条件或地层查询生成 PBDB 背景包。
 - `evidence_quality_report`：评估某个分类单元、地质年代和/或地理查询范围下的 PBDB 样本证据质量。
+- `bibliography_pack`：从已有 PBDB evidence pack 中抽取结构化参考文献信息。
+- `pack_validation_report`：校验已有 PBDB evidence pack 的可复现元数据和来源覆盖。
+- `research_summary_markdown`：把已有 PBDB evidence pack 渲染成通用 Markdown 研究摘要。
 
 ## 组合工作流工具
 
@@ -114,6 +121,23 @@ startup_timeout_sec = 10.0
 - 证据审查：用 `evidence_quality_report` 提示样本量偏低、参考文献稀疏、年代范围过宽、坐标覆盖不足和分类意见需要复核等问题。
 
 每个组合结果都会保留来源查询 URL，方便下游研究笔记、论文、报告或内容工作流复现 PBDB 查询。
+
+## 可复现研究输出
+
+组合 evidence pack 会包含顶层 `manifest`，其中记录：
+
+- 包名和版本
+- PBDB base URL
+- workflow 名称
+- 原始输入
+- 生成时间
+- 每条查询的 URL、endpoint、解析后的参数和记录数
+
+可以使用本地输出工具处理已有 evidence pack；这些工具不会再次请求 PBDB：
+
+- `bibliography_pack` / `pbdb bibliography`：抽取参考文献元数据。
+- `pack_validation_report` / `pbdb validate-pack`：检查 manifest、query URL、evidence records、references 和 age-range 覆盖。
+- `research_summary_markdown` / `pbdb markdown-summary`：生成包含 scope、validation、references、reproducible queries 和 caveats 的通用 Markdown 摘要。
 
 ## 研究注意事项
 

@@ -26,6 +26,7 @@ try:
         taxa_search,
         taxon_lookup,
     )
+    from .outputs import bibliography_pack, pack_validation_report, research_summary_markdown
     from .research import (
         evidence_quality_report,
         interval_context_pack,
@@ -56,6 +57,7 @@ except ImportError:
         taxa_search,
         taxon_lookup,
     )
+    from outputs import bibliography_pack, pack_validation_report, research_summary_markdown  # type: ignore[no-redef]
     from research import (  # type: ignore[no-redef]
         evidence_quality_report,
         interval_context_pack,
@@ -69,7 +71,7 @@ except ImportError:
 
 PROTOCOL_VERSION = "2024-11-05"
 SERVER_NAME = "pbdb-mcp"
-SERVER_VERSION = "0.4.0"
+SERVER_VERSION = "0.5.0"
 
 
 def _read_message() -> dict[str, Any] | None:
@@ -476,6 +478,43 @@ def _tool_schema() -> list[dict[str, Any]]:
                 },
             },
         },
+        {
+            "name": "bibliography_pack",
+            "description": "Extract structured reference metadata from an existing PBDB evidence pack. This does not call PBDB.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "pack": {"type": "object", "additionalProperties": True},
+                    "limit": {"type": "integer", "minimum": 1, "maximum": 1000},
+                },
+                "required": ["pack"],
+            },
+        },
+        {
+            "name": "pack_validation_report",
+            "description": "Validate reproducibility metadata and source coverage in an existing PBDB evidence pack. This does not call PBDB.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "pack": {"type": "object", "additionalProperties": True},
+                },
+                "required": ["pack"],
+            },
+        },
+        {
+            "name": "research_summary_markdown",
+            "description": "Render a generic Markdown research summary from an existing PBDB evidence pack. This does not call PBDB.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "pack": {"type": "object", "additionalProperties": True},
+                    "title": {"type": "string"},
+                    "max_references": {"type": "integer", "minimum": 1, "maximum": 100},
+                    "max_queries": {"type": "integer", "minimum": 1, "maximum": 200},
+                },
+                "required": ["pack"],
+            },
+        },
     ]
 
 
@@ -672,6 +711,21 @@ def _call_tool(name: str, args: dict[str, Any] | None) -> str:
             ),
             ensure_ascii=False,
             indent=2,
+        )
+    elif name == "bibliography_pack":
+        return json.dumps(
+            bibliography_pack(args["pack"], limit=args.get("limit", 100)),
+            ensure_ascii=False,
+            indent=2,
+        )
+    elif name == "pack_validation_report":
+        return json.dumps(pack_validation_report(args["pack"]), ensure_ascii=False, indent=2)
+    elif name == "research_summary_markdown":
+        return research_summary_markdown(
+            args["pack"],
+            title=args.get("title"),
+            max_references=args.get("max_references", 10),
+            max_queries=args.get("max_queries", 20),
         )
     else:
         raise KeyError(name)

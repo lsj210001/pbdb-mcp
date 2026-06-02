@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from typing import Any
+from urllib.parse import parse_qs, urlparse
 
 try:
     from .client import (
+        PBDB_BASE_URL,
         PBDBResponse,
         associated_by_reference,
         collections_search,
@@ -22,6 +24,7 @@ try:
     )
 except ImportError:
     from client import (  # type: ignore[no-redef]
+        PBDB_BASE_URL,
         PBDBResponse,
         associated_by_reference,
         collections_search,
@@ -39,6 +42,10 @@ except ImportError:
     )
 
 
+PACKAGE_NAME = "pbdb-mcp"
+PACKAGE_VERSION = "0.5.0"
+
+
 def _records(response: PBDBResponse) -> list[dict[str, Any]]:
     if isinstance(response.body, dict):
         records = response.body.get("records", [])
@@ -47,12 +54,63 @@ def _records(response: PBDBResponse) -> list[dict[str, Any]]:
     return []
 
 
+def _url_metadata(url: str) -> dict[str, Any]:
+    parsed = urlparse(url)
+    endpoint = parsed.path
+    marker = "/data1.2/"
+    if marker in endpoint:
+        endpoint = endpoint.split(marker, 1)[1]
+    params = {
+        key: values[0] if len(values) == 1 else values
+        for key, values in parse_qs(parsed.query, keep_blank_values=True).items()
+    }
+    return {"endpoint": endpoint.lstrip("/"), "params": params}
+
+
 def _query(name: str, response: PBDBResponse) -> dict[str, Any]:
-    return {"name": name, "url": response.url, "record_count": len(_records(response))}
+    return {"name": name, "url": response.url, **_url_metadata(response.url), "record_count": len(_records(response))}
 
 
 def _response_payload(name: str, response: PBDBResponse) -> dict[str, Any]:
     return {"query": _query(name, response), "records": _records(response)}
+
+
+def _collect_queries(value: Any) -> list[dict[str, Any]]:
+    queries: list[dict[str, Any]] = []
+    if isinstance(value, dict):
+        query = value.get("query")
+        if isinstance(query, dict) and "url" in query:
+            queries.append(query)
+        for child in value.values():
+            queries.extend(_collect_queries(child))
+    elif isinstance(value, list):
+        for child in value:
+            queries.extend(_collect_queries(child))
+    return queries
+
+
+def _manifest(workflow: str, generated_at: str, input_payload: dict[str, Any], evidence: dict[str, Any]) -> dict[str, Any]:
+    queries = _collect_queries(evidence)
+    return {
+        "package": PACKAGE_NAME,
+        "version": PACKAGE_VERSION,
+        "pbdb_base_url": PBDB_BASE_URL,
+        "workflow": workflow,
+        "generated_at": generated_at,
+        "input": input_payload,
+        "query_count": len(queries),
+        "queries": queries,
+    }
+
+
+def _with_manifest(pack: dict[str, Any], workflow: str) -> dict[str, Any]:
+    pack["manifest"] = _manifest(
+        workflow=workflow,
+        generated_at=str(pack.get("generated_at", "")),
+        input_payload=pack.get("input", {}),
+        evidence=pack.get("evidence", {}),
+    )
+    return pack
 
 
 def _unique_values(records: list[dict[str, Any]], keys: tuple[str, ...], limit: int = 12) -> list[Any]:
@@ -267,7 +325,7 @@ def taxon_fact_card(
     reference_records = _records(references)
     strata_records = _records(strata)
 
-    return {
+    return _with_manifest({
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "input": {"name": name, "limit": limit, "geo_level": geo_level},
         "summary": {
@@ -301,7 +359,7 @@ def taxon_fact_card(
             "PBDB is a live database; use the included query URLs for reproducibility.",
             "Use reference records and taxonomic opinions before making confident classification or reconstruction claims.",
         ],
-    }
+    }, "taxon_fact_card")
 
 
 def evidence_quality_report(
@@ -340,12 +398,12 @@ def evidence_quality_report(
     if opinions:
         evidence["taxonomic_opinions"] = _response_payload("taxa_opinions", opinions)
 
-    return {
+    return _with_manifest({
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "input": {"name": name, "interval": interval, "country": country, "state": state, "limit": limit},
         "summary": quality,
         "evidence": evidence,
-    }
+    }, "evidence_quality_report")
 
 
 def taxa_compare_pack(
@@ -390,7 +448,7 @@ def taxa_compare_pack(
             }
         )
 
-    return {
+    return _with_manifest({
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "input": {"names": cleaned_names, "limit": limit, "geo_level": geo_level},
         "summary": {
@@ -401,7 +459,7 @@ def taxa_compare_pack(
             ],
         },
         "evidence": {"taxon_fact_cards": cards},
-    }
+    }, "taxa_compare_pack")
 
 
 def interval_context_pack(
@@ -424,7 +482,7 @@ def interval_context_pack(
     strata_records = _records(strata)
     taxon_records = _records(taxa)
 
-    return {
+    return _with_manifest({
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "input": {"interval": interval, "limit": limit, "geo_level": geo_level},
         "summary": {
@@ -456,7 +514,7 @@ def interval_context_pack(
             "Interval context packs summarize sampled PBDB records for an interval; they do not reconstruct a complete paleoecosystem.",
             "Use reference and collection records to check whether apparent patterns reflect sampling intensity.",
         ],
-    }
+    }, "interval_context_pack")
 
 
 def locality_context_pack(
@@ -496,7 +554,7 @@ def locality_context_pack(
     if strata:
         evidence["strata"] = _response_payload("strata_search", strata)
 
-    return {
+    return _with_manifest({
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "input": {
             "country": country,
@@ -529,7 +587,7 @@ def locality_context_pack(
             "Locality context packs summarize sampled PBDB records for the supplied filters.",
             "Stratum lookup is included as a contextual lookup; occurrence and collection filters may not be restricted by stratum name unless PBDB supports the supplied filter combination.",
         ],
-    }
+    }, "locality_context_pack")
 
 
 def reference_evidence_pack(
@@ -541,7 +599,7 @@ def reference_evidence_pack(
     reference = references_search(ref_id=ref_id, show="attr", timeout=timeout)
     associated = associated_by_reference(ref_id=ref_id, record_type=record_type, show="countries", timeout=timeout)
     associated_records = _records(associated)
-    return {
+    return _with_manifest({
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "input": {"ref_id": ref_id, "record_type": record_type},
         "summary": {
@@ -559,7 +617,7 @@ def reference_evidence_pack(
             "Associated records show PBDB records linked to this reference, not every claim made in the publication.",
             "Use the reference metadata and associated records as a starting point for paper-level fact checking.",
         ],
-    }
+    }, "reference_evidence_pack")
 
 
 def taxonomy_dispute_report(
@@ -579,7 +637,7 @@ def taxonomy_dispute_report(
         reference_queries.append(_query(f"references_search:{ref_id}", response))
         references.extend(_records(response))
 
-    return {
+    return _with_manifest({
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "input": {"name": name, "limit": limit},
         "summary": {
@@ -601,4 +659,4 @@ def taxonomy_dispute_report(
             "Taxonomic opinions represent database records used to build PBDB's taxonomic hierarchy; they may include superseded opinions.",
             "Do not convert opinion history into a definitive dispute claim without reading the referenced papers.",
         ],
-    }
+    }, "taxonomy_dispute_report")

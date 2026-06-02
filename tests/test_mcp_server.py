@@ -34,6 +34,9 @@ class MCPServerTest(unittest.TestCase):
                 "interval_context_pack",
                 "locality_context_pack",
                 "evidence_quality_report",
+                "bibliography_pack",
+                "pack_validation_report",
+                "research_summary_markdown",
             },
         )
 
