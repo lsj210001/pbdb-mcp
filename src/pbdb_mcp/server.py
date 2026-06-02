@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 from typing import Any, Dict
 
@@ -71,7 +72,8 @@ except ImportError:
 
 PROTOCOL_VERSION = "2024-11-05"
 SERVER_NAME = "pbdb-mcp"
-SERVER_VERSION = "0.5.0"
+SERVER_VERSION = "0.6.0"
+TOOL_MODE_ENV = "PBDB_MCP_TOOL_MODE"
 
 
 def _read_message() -> dict[str, Any] | None:
@@ -112,7 +114,7 @@ def _error(id_value: Any, code: int, message: str, data: Any | None = None) -> d
     return {"jsonrpc": "2.0", "id": id_value, "error": payload}
 
 
-def _tool_schema() -> list[dict[str, Any]]:
+def _legacy_tool_schema() -> list[dict[str, Any]]:
     return [
         {
             "name": "pbdb_request",
@@ -518,12 +520,403 @@ def _tool_schema() -> list[dict[str, Any]]:
     ]
 
 
+def _compact_tool_schema() -> list[dict[str, Any]]:
+    return [
+        {
+            "name": "pbdb_request",
+            "description": "Call an arbitrary PBDB API path under https://paleobiodb.org/data1.2/ and return the raw response.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "Path like taxa/single.json or occs/list.json"},
+                    "params": {"type": "object", "additionalProperties": True},
+                    "timeout": {"type": "integer", "minimum": 1, "maximum": 120},
+                },
+                "required": ["path"],
+            },
+        },
+        {
+            "name": "taxon_tool",
+            "description": "Taxon lookup, taxonomic-name search, or PBDB autocomplete. Actions: lookup, search, autocomplete.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "action": {"type": "string", "enum": ["lookup", "search", "autocomplete"]},
+                    "name": {"type": "string"},
+                    "taxon_no": {"type": ["string", "integer"]},
+                    "taxon_id": {"type": ["string", "integer"]},
+                    "base_name": {"type": "string"},
+                    "taxon_name": {"type": "string"},
+                    "rank": {"type": "string"},
+                    "record_type": {"type": "string"},
+                    "limit": {"type": "integer", "minimum": 1, "maximum": 500},
+                    "show": {"type": "string"},
+                    "timeout": {"type": "integer", "minimum": 1, "maximum": 120},
+                },
+                "required": ["action"],
+            },
+        },
+        {
+            "name": "occurrence_tool",
+            "description": "Occurrence search and occurrence-derived summaries. Actions: search, taxa_summary, refs, strata_summary, geo_summary.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "action": {"type": "string", "enum": ["search", "taxa_summary", "refs", "strata_summary", "geo_summary"]},
+                    "base_name": {"type": "string"},
+                    "taxon_name": {"type": "string"},
+                    "interval": {"type": "string"},
+                    "country": {"type": "string"},
+                    "state": {"type": "string"},
+                    "rank": {"type": "string"},
+                    "level": {"type": "integer", "minimum": 1},
+                    "limit": {"type": "integer", "minimum": 1, "maximum": 500},
+                    "show": {"type": "string"},
+                    "timeout": {"type": "integer", "minimum": 1, "maximum": 120},
+                },
+                "required": ["action"],
+            },
+        },
+        {
+            "name": "collection_tool",
+            "description": "Collection search or collection geography summary. Actions: search, geo_summary.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "action": {"type": "string", "enum": ["search", "geo_summary"]},
+                    "base_name": {"type": "string"},
+                    "taxon_name": {"type": "string"},
+                    "interval": {"type": "string"},
+                    "country": {"type": "string"},
+                    "state": {"type": "string"},
+                    "level": {"type": "integer", "minimum": 1},
+                    "limit": {"type": "integer", "minimum": 1, "maximum": 500},
+                    "show": {"type": "string"},
+                    "timeout": {"type": "integer", "minimum": 1, "maximum": 120},
+                },
+                "required": ["action"],
+            },
+        },
+        {
+            "name": "specimen_tool",
+            "description": "Search PBDB fossil specimens.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "base_name": {"type": "string"},
+                    "taxon_name": {"type": "string"},
+                    "interval": {"type": "string"},
+                    "country": {"type": "string"},
+                    "state": {"type": "string"},
+                    "limit": {"type": "integer", "minimum": 1, "maximum": 500},
+                    "show": {"type": "string"},
+                    "timeout": {"type": "integer", "minimum": 1, "maximum": 120},
+                },
+            },
+        },
+        {
+            "name": "reference_tool",
+            "description": "Reference search, reference-associated records, or reference evidence packs. Actions: search, associated, evidence_pack.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "action": {"type": "string", "enum": ["search", "associated", "evidence_pack"]},
+                    "ref_id": {"type": ["string", "integer"]},
+                    "ref_match": {"type": "string"},
+                    "ref_author": {"type": "string"},
+                    "ref_title": {"type": "string"},
+                    "ref_doi": {"type": "string"},
+                    "pub_title": {"type": "string"},
+                    "all_records": {"type": "boolean"},
+                    "record_type": {"type": "string", "enum": ["txn", "opn", "col", "all"]},
+                    "limit": {"type": "integer", "minimum": 1, "maximum": 500},
+                    "show": {"type": "string"},
+                    "timeout": {"type": "integer", "minimum": 1, "maximum": 120},
+                },
+                "required": ["action"],
+            },
+        },
+        {
+            "name": "taxonomy_tool",
+            "description": "Taxonomic opinions and dispute reports. Actions: taxon_opinions, opinions_search, dispute_report.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "action": {"type": "string", "enum": ["taxon_opinions", "opinions_search", "dispute_report"]},
+                    "name": {"type": "string"},
+                    "base_name": {"type": "string"},
+                    "taxon_name": {"type": "string"},
+                    "taxon_id": {"type": ["string", "integer"]},
+                    "opinion_id": {"type": ["string", "integer"]},
+                    "author": {"type": "string"},
+                    "pubyr": {"type": ["string", "integer"]},
+                    "created_since": {"type": "string"},
+                    "modified_since": {"type": "string"},
+                    "limit": {"type": "integer", "minimum": 1, "maximum": 500},
+                    "show": {"type": "string"},
+                    "timeout": {"type": "integer", "minimum": 1, "maximum": 120},
+                },
+                "required": ["action"],
+            },
+        },
+        {
+            "name": "geology_tool",
+            "description": "Geological interval and stratigraphic unit lookups. Actions: intervals, strata.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "action": {"type": "string", "enum": ["intervals", "strata"]},
+                    "name": {"type": "string"},
+                    "limit": {"type": "integer", "minimum": 1, "maximum": 500},
+                    "timeout": {"type": "integer", "minimum": 1, "maximum": 120},
+                },
+                "required": ["action"],
+            },
+        },
+        {
+            "name": "context_pack",
+            "description": "Composite PBDB research packs. Actions: taxon_fact, compare_taxa, interval_context, locality_context, evidence_quality.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "action": {"type": "string", "enum": ["taxon_fact", "compare_taxa", "interval_context", "locality_context", "evidence_quality"]},
+                    "name": {"type": "string"},
+                    "names": {"type": "array", "items": {"type": "string"}, "minItems": 2, "maxItems": 5},
+                    "interval": {"type": "string"},
+                    "country": {"type": "string"},
+                    "state": {"type": "string"},
+                    "base_name": {"type": "string"},
+                    "stratum_name": {"type": "string"},
+                    "limit": {"type": "integer", "minimum": 1, "maximum": 200},
+                    "geo_level": {"type": "integer", "minimum": 1},
+                    "timeout": {"type": "integer", "minimum": 1, "maximum": 120},
+                },
+                "required": ["action"],
+            },
+        },
+        {
+            "name": "pack_output_tool",
+            "description": "Process existing evidence packs without calling PBDB. Actions: bibliography, validate, markdown.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "action": {"type": "string", "enum": ["bibliography", "validate", "markdown"]},
+                    "pack": {"type": "object", "additionalProperties": True},
+                    "limit": {"type": "integer", "minimum": 1, "maximum": 1000},
+                    "title": {"type": "string"},
+                    "max_references": {"type": "integer", "minimum": 1, "maximum": 100},
+                    "max_queries": {"type": "integer", "minimum": 1, "maximum": 200},
+                },
+                "required": ["action", "pack"],
+            },
+        },
+    ]
+
+
+def _tool_schema() -> list[dict[str, Any]]:
+    mode = os.environ.get(TOOL_MODE_ENV, "compact").strip().lower()
+    if mode in {"full", "legacy", "all"}:
+        return _legacy_tool_schema()
+    return _compact_tool_schema()
+
+
 def _call_tool(name: str, args: dict[str, Any] | None) -> str:
     args = args or {}
     timeout = int(args.get("timeout", 30))
 
     if name == "pbdb_request":
         result = request(args["path"], params=args.get("params"), timeout=timeout)
+    elif name == "taxon_tool":
+        action = args["action"]
+        if action == "lookup":
+            result = taxon_lookup(name=args.get("name"), taxon_no=args.get("taxon_no"), show=args.get("show"), timeout=timeout)
+        elif action == "search":
+            result = taxa_search(
+                base_name=args.get("base_name"),
+                taxon_name=args.get("taxon_name"),
+                taxon_id=args.get("taxon_id"),
+                rank=args.get("rank"),
+                limit=args.get("limit", 50),
+                show=args.get("show", "attr"),
+                timeout=timeout,
+            )
+        elif action == "autocomplete":
+            result = combined_auto(name=args["name"], record_type=args.get("record_type"), limit=args.get("limit", 10), timeout=timeout)
+        else:
+            raise KeyError(f"taxon_tool action: {action}")
+    elif name == "occurrence_tool":
+        action = args["action"]
+        common = {
+            "base_name": args.get("base_name"),
+            "taxon_name": args.get("taxon_name"),
+            "interval": args.get("interval"),
+            "country": args.get("country"),
+            "state": args.get("state"),
+            "limit": args.get("limit", 50),
+        }
+        if action == "search":
+            result = occurrences_search(**common, show=args.get("show", "coords,attr"), timeout=timeout)
+        elif action == "taxa_summary":
+            result = occs_taxa_summary(**common, rank=args.get("rank"), show=args.get("show", "attr"), timeout=timeout)
+        elif action == "refs":
+            result = occs_refs(**common, show=args.get("show", "attr"), timeout=timeout)
+        elif action == "strata_summary":
+            result = occs_strata_summary(**common, timeout=timeout)
+        elif action == "geo_summary":
+            result = geo_summary(
+                record_type="occs",
+                level=args.get("level", 2),
+                base_name=args.get("base_name"),
+                taxon_name=args.get("taxon_name"),
+                interval=args.get("interval"),
+                country=args.get("country"),
+                state=args.get("state"),
+                timeout=timeout,
+            )
+        else:
+            raise KeyError(f"occurrence_tool action: {action}")
+    elif name == "collection_tool":
+        action = args["action"]
+        if action == "search":
+            result = collections_search(
+                base_name=args.get("base_name"),
+                taxon_name=args.get("taxon_name"),
+                interval=args.get("interval"),
+                country=args.get("country"),
+                state=args.get("state"),
+                limit=args.get("limit", 50),
+                show=args.get("show", "loc,time,strat,ref"),
+                timeout=timeout,
+            )
+        elif action == "geo_summary":
+            result = geo_summary(
+                record_type="colls",
+                level=args.get("level", 2),
+                base_name=args.get("base_name"),
+                taxon_name=args.get("taxon_name"),
+                interval=args.get("interval"),
+                country=args.get("country"),
+                state=args.get("state"),
+                timeout=timeout,
+            )
+        else:
+            raise KeyError(f"collection_tool action: {action}")
+    elif name == "specimen_tool":
+        result = specimens_search(
+            base_name=args.get("base_name"),
+            taxon_name=args.get("taxon_name"),
+            interval=args.get("interval"),
+            country=args.get("country"),
+            state=args.get("state"),
+            limit=args.get("limit", 50),
+            show=args.get("show"),
+            timeout=timeout,
+        )
+    elif name == "reference_tool":
+        action = args["action"]
+        if action == "search":
+            result = references_search(
+                ref_id=args.get("ref_id"),
+                ref_match=args.get("ref_match"),
+                ref_author=args.get("ref_author"),
+                ref_title=args.get("ref_title"),
+                ref_doi=args.get("ref_doi"),
+                pub_title=args.get("pub_title"),
+                all_records=args.get("all_records"),
+                limit=args.get("limit", 50),
+                show=args.get("show", "attr"),
+                timeout=timeout,
+            )
+        elif action == "associated":
+            result = associated_by_reference(ref_id=args["ref_id"], record_type=args.get("record_type", "all"), show=args.get("show"), timeout=timeout)
+        elif action == "evidence_pack":
+            return json.dumps(
+                reference_evidence_pack(ref_id=args["ref_id"], record_type=args.get("record_type", "all"), timeout=timeout),
+                ensure_ascii=False,
+                indent=2,
+            )
+        else:
+            raise KeyError(f"reference_tool action: {action}")
+    elif name == "taxonomy_tool":
+        action = args["action"]
+        if action == "taxon_opinions":
+            result = taxa_opinions(
+                base_name=args.get("base_name"),
+                taxon_name=args.get("taxon_name"),
+                taxon_id=args.get("taxon_id"),
+                limit=args.get("limit", 50),
+                show=args.get("show"),
+                timeout=timeout,
+            )
+        elif action == "opinions_search":
+            result = opinions_search(
+                opinion_id=args.get("opinion_id"),
+                author=args.get("author"),
+                pubyr=args.get("pubyr"),
+                created_since=args.get("created_since"),
+                modified_since=args.get("modified_since"),
+                limit=args.get("limit", 50),
+                show=args.get("show"),
+                timeout=timeout,
+            )
+        elif action == "dispute_report":
+            return json.dumps(taxonomy_dispute_report(name=args["name"], limit=args.get("limit", 25), timeout=timeout), ensure_ascii=False, indent=2)
+        else:
+            raise KeyError(f"taxonomy_tool action: {action}")
+    elif name == "geology_tool":
+        action = args["action"]
+        if action == "intervals":
+            result = intervals_search(name=args.get("name"), limit=args.get("limit", 50), timeout=timeout)
+        elif action == "strata":
+            result = strata_search(name=args.get("name"), limit=args.get("limit", 50), timeout=timeout)
+        else:
+            raise KeyError(f"geology_tool action: {action}")
+    elif name == "context_pack":
+        action = args["action"]
+        if action == "taxon_fact":
+            payload = taxon_fact_card(name=args["name"], limit=args.get("limit", 10), geo_level=args.get("geo_level", 2), timeout=timeout)
+        elif action == "compare_taxa":
+            payload = taxa_compare_pack(names=args["names"], limit=args.get("limit", 10), geo_level=args.get("geo_level", 2), timeout=timeout)
+        elif action == "interval_context":
+            payload = interval_context_pack(interval=args["interval"], limit=args.get("limit", 25), geo_level=args.get("geo_level", 2), timeout=timeout)
+        elif action == "locality_context":
+            payload = locality_context_pack(
+                country=args.get("country"),
+                state=args.get("state"),
+                interval=args.get("interval"),
+                base_name=args.get("base_name"),
+                stratum_name=args.get("stratum_name"),
+                limit=args.get("limit", 25),
+                geo_level=args.get("geo_level", 2),
+                timeout=timeout,
+            )
+        elif action == "evidence_quality":
+            payload = evidence_quality_report(
+                name=args.get("name"),
+                interval=args.get("interval"),
+                country=args.get("country"),
+                state=args.get("state"),
+                limit=args.get("limit", 25),
+                timeout=timeout,
+            )
+        else:
+            raise KeyError(f"context_pack action: {action}")
+        return json.dumps(payload, ensure_ascii=False, indent=2)
+    elif name == "pack_output_tool":
+        action = args["action"]
+        if action == "bibliography":
+            payload = bibliography_pack(args["pack"], limit=args.get("limit", 100))
+            return json.dumps(payload, ensure_ascii=False, indent=2)
+        if action == "validate":
+            return json.dumps(pack_validation_report(args["pack"]), ensure_ascii=False, indent=2)
+        if action == "markdown":
+            return research_summary_markdown(
+                args["pack"],
+                title=args.get("title"),
+                max_references=args.get("max_references", 10),
+                max_queries=args.get("max_queries", 20),
+            )
+        raise KeyError(f"pack_output_tool action: {action}")
     elif name == "taxon_lookup":
         result = taxon_lookup(name=args.get("name"), taxon_no=args.get("taxon_no"), show=args.get("show"), timeout=timeout)
     elif name == "taxa_search":

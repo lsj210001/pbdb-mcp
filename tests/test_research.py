@@ -63,7 +63,7 @@ class ResearchTest(unittest.TestCase):
         self.assertEqual(card["summary"]["reference_ids"], ["ref:4205"])
         self.assertEqual(card["evidence"]["taxon"]["query"]["url"], "https://example.test/taxon")
         self.assertEqual(card["manifest"]["workflow"], "taxon_fact_card")
-        self.assertEqual(card["manifest"]["version"], "0.5.0")
+        self.assertEqual(card["manifest"]["version"], "0.6.0")
 
     @patch("pbdb_mcp.research.associated_by_reference")
     @patch("pbdb_mcp.research.references_search")

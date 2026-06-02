@@ -83,33 +83,26 @@ startup_timeout_sec = 10.0
 
 ## MCP 工具
 
+默认情况下，MCP server 暴露 10 个分组后的精简工具：
+
 - `pbdb_request`：调用 `https://paleobiodb.org/data1.2/` 下任意 PBDB API 路径。
-- `taxon_lookup`：按 `name` 或 `taxon_no` 查询分类单元。
-- `taxa_search`：按 base name、taxon name、编号或 rank 查询分类名。
-- `taxa_opinions`：查询某个分类单元关联的分类意见。
-- `opinions_search`：按编号、作者、发表年份或最近变更查询分类意见。
-- `occurrences_search`：按分类单元、地质年代、国家或州/省查询化石 occurrence。
-- `occs_taxa_summary`：对选定 occurrence 集合做分类层级汇总。
-- `occs_refs`：查询选定 occurrence 集合关联的参考文献。
-- `occs_strata_summary`：汇总选定 occurrence 集合关联的地层信息。
-- `geo_summary`：查询 occurrence 或 collection 的地理聚类汇总。
-- `collections_search`：按分类单元、地质年代、国家或州/省查询 fossil collection。
-- `specimens_search`：按分类单元、地质年代或地理条件查询化石标本。
-- `references_search`：按 `ref_id`、作者、标题、DOI、出版物标题或匹配文本查询参考文献。
-- `intervals_search`：查询地质年代区间。
-- `strata_search`：按名称查询地层单位。按地质年代汇总地层时使用 `occs_strata_summary`。
-- `combined_auto`：跨 PBDB 记录类型做名称自动补全。
-- `associated_by_reference`：按 PBDB reference 查询关联的分类名、分类意见和 collection。
-- `taxon_fact_card`：为某个分类单元生成多查询证据卡，并保留来源查询 URL。
-- `reference_evidence_pack`：为某个 PBDB reference 生成证据包和关联记录。
-- `taxonomy_dispute_report`：生成分类意见报告，包含状态、作者、年份、参考文献和查询 URL。
-- `taxa_compare_pack`：比较 2-5 个分类单元的 PBDB 样本证据，包括年代范围、地理、参考文献、分类意见和证据质量提示。
-- `interval_context_pack`：生成地质年代背景包，包括样本类群、occurrence、collection、地层、参考文献、地理和证据质量提示。
-- `locality_context_pack`：围绕地区、州/省、分类单元过滤条件或地层查询生成 PBDB 背景包。
-- `evidence_quality_report`：评估某个分类单元、地质年代和/或地理查询范围下的 PBDB 样本证据质量。
-- `bibliography_pack`：从已有 PBDB evidence pack 中抽取结构化参考文献信息。
-- `pack_validation_report`：校验已有 PBDB evidence pack 的可复现元数据和来源覆盖。
-- `research_summary_markdown`：把已有 PBDB evidence pack 渲染成通用 Markdown 研究摘要。
+- `taxon_tool`：分类单元查询、分类名搜索和自动补全。
+- `occurrence_tool`：occurrence 查询，以及 occurrence 派生的分类、参考文献、地层和地理汇总。
+- `collection_tool`：collection 查询和 collection 地理汇总。
+- `specimen_tool`：标本查询。
+- `reference_tool`：参考文献查询、文献关联记录和文献证据包。
+- `taxonomy_tool`：分类意见和分类争议报告。
+- `geology_tool`：地质年代和地层单位查询。
+- `context_pack`：分类单元、比较、地质年代、地区和证据质量组合包。
+- `pack_output_tool`：对已有 evidence pack 生成 bibliography、validation 和 Markdown summary。
+
+细粒度 legacy MCP 工具仍然保留用于兼容。启动 MCP server 前设置 `PBDB_MCP_TOOL_MODE=full` 可以暴露全部 legacy 工具：
+
+```bash
+PBDB_MCP_TOOL_MODE=full pbdb-mcp
+```
+
+CLI 不受 MCP tool mode 影响，仍保留全部细粒度命令。
 
 ## 组合工作流工具
 

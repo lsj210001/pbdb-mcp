@@ -43,7 +43,7 @@ except ImportError:
 
 
 PACKAGE_NAME = "pbdb-mcp"
-PACKAGE_VERSION = "0.5.0"
+PACKAGE_VERSION = "0.6.0"
 
 
 def _records(response: PBDBResponse) -> list[dict[str, Any]]:

@@ -83,33 +83,26 @@ For direct script execution, ensure `src` is on `PYTHONPATH` or install the pack
 
 ## MCP Tools
 
+By default, the MCP server exposes a compact tool surface with 10 grouped tools:
+
 - `pbdb_request`: call an arbitrary PBDB API path under `https://paleobiodb.org/data1.2/`.
-- `taxon_lookup`: look up a taxon by `name` or `taxon_no`.
-- `taxa_search`: search taxonomic names by base name, taxon name, identifier, or rank.
-- `taxa_opinions`: return taxonomic opinions attached to a selected taxon.
-- `opinions_search`: search taxonomic opinions by identifier, author, publication year, or recent changes.
-- `occurrences_search`: search fossil occurrences by taxon, interval, country, or state.
-- `occs_taxa_summary`: summarize the taxonomic hierarchy represented by a selected set of occurrences.
-- `occs_refs`: return references associated with a selected set of occurrences.
-- `occs_strata_summary`: summarize strata associated with selected occurrences.
-- `geo_summary`: return geographic cluster summaries for selected occurrences or collections.
-- `collections_search`: search fossil collections by taxon, interval, country, or state.
-- `specimens_search`: search PBDB fossil specimens by taxon, interval, or geography.
-- `references_search`: search references by `ref_id`, author, title, DOI, publication title, or match text.
-- `intervals_search`: search geological intervals.
-- `strata_search`: search stratigraphic units by name. For interval-scoped strata, use `occs_strata_summary`.
-- `combined_auto`: autocomplete names across PBDB record types.
-- `associated_by_reference`: return taxa, opinions, and/or collections associated with a PBDB reference.
-- `taxon_fact_card`: build a multi-query evidence card for a taxon, preserving source query URLs.
-- `reference_evidence_pack`: build an evidence pack for a PBDB reference and its associated records.
-- `taxonomy_dispute_report`: build a taxonomic opinion report with statuses, authors, years, references, and query URLs.
-- `taxa_compare_pack`: compare 2-5 taxa with sampled PBDB age ranges, geography, references, opinions, and evidence-quality flags.
-- `interval_context_pack`: build a geological interval context pack with sampled taxa, occurrences, collections, strata, references, geography, and quality flags.
-- `locality_context_pack`: build a locality, region, taxon-filtered, or stratum-context pack from PBDB records.
-- `evidence_quality_report`: assess sampled PBDB evidence quality for a taxon, interval, and/or geography query scope.
-- `bibliography_pack`: extract structured reference metadata from an existing PBDB evidence pack.
-- `pack_validation_report`: validate reproducibility metadata and source coverage in an existing PBDB evidence pack.
-- `research_summary_markdown`: render a generic Markdown research summary from an existing PBDB evidence pack.
+- `taxon_tool`: taxon lookup, taxonomic-name search, and autocomplete.
+- `occurrence_tool`: occurrence search plus occurrence-derived taxa, reference, strata, and geography summaries.
+- `collection_tool`: collection search and collection geography summaries.
+- `specimen_tool`: specimen search.
+- `reference_tool`: reference search, reference-associated records, and reference evidence packs.
+- `taxonomy_tool`: taxonomic opinions and taxonomic dispute reports.
+- `geology_tool`: geological interval and stratigraphic-unit lookups.
+- `context_pack`: composite taxon, comparison, interval, locality, and evidence-quality packs.
+- `pack_output_tool`: bibliography, validation, and Markdown rendering for existing evidence packs.
+
+The fine-grained legacy MCP tools are still available for compatibility. Set `PBDB_MCP_TOOL_MODE=full` before starting the MCP server to expose all legacy tools:
+
+```bash
+PBDB_MCP_TOOL_MODE=full pbdb-mcp
+```
+
+The CLI keeps all fine-grained commands regardless of MCP tool mode.
 
 ## Composite Workflow Tools
 
